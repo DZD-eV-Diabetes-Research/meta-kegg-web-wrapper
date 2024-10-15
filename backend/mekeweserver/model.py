@@ -51,12 +51,15 @@ class PipelineRunStatus(BaseModel):
     place_in_queue: int = Field(
         default=None,
         description="Shows how many pipeline runs are ahead of a queued pipeline-run",
+        examples=[4],
     )
     error: Optional[str] = Field(
         default=None,
         description="If the state of a pipeline run is `failed`, the error message will be logged into this attribute",
+        examples=[None],
     )
     result_path: Optional[str] = Field(
         default=None,
         description="If the state of a pipeline run is `success`, the result can be downloaded from this path.",
+        examples=[None],
     )
