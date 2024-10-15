@@ -5,6 +5,7 @@ import json
 import asyncio
 import uvicorn
 from uvicorn.config import LOGGING_CONFIG
+from fastapi.openapi.utils import get_openapi
 
 # Add meta kegg server to global Python modules.
 # This way we address mekeweserver as a module for imports without installing it first.
@@ -19,6 +20,20 @@ if __name__ == "__main__":
 from mekeweserver.config import Config
 
 config = Config()
+
+
+def dump_open_api_spec(app: FastAPI, path: Path):
+    with open(path, "w") as f:
+        json.dump(
+            get_openapi(
+                title=app.title,
+                version=app.version,
+                openapi_version=app.openapi_version,
+                description=app.description,
+                routes=app.routes,
+            ),
+            f,
+        )
 
 
 def run_server():
@@ -72,6 +87,7 @@ def run_server():
         loop=event_loop,
     )
     uvicorn_server = uvicorn.Server(config=uvicorn_config)
+    dump_open_api_spec(app, Path(f"{Path(__file__).parent}/../../openapi.json"))
     event_loop.run_until_complete(uvicorn_server.serve())
 
 
