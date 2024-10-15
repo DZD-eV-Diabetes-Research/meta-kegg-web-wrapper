@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mekeweserver"
+authors = [{ name = "Tim Bleimehl", email = "bleimehl@helmholtz-munich.de" }]
+description = "A web client wrapper for the MetaKegg project."
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["DZD", "MetaKeggWeb", "Kegg"]
+license = { text = "MIT" }
+classifiers = [
+    "Framework :: FastAPI",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "metaKEGG @ git+ssh://github.com/dife-bioinformatics/metaKEGG#egg=metaKEGG",
+    "uvicorn",
+    "fastapi",
+    "pyyaml",
+    "pydantic",
+    "pydantic_settings",
+    "getversion",
+    "pip-tools",
+    "python-multipart",
+    "slowapi",
+]
+dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+include = ['mekeweserver']
+
+[project.optional-dependencies]
+test = ["pytest", "requests"]
+docs = ["mkdocs", "mkdocstrings[python]", "mkdocs-autorefs", "mkdocs-material"]
+[project.scripts]
+mekeweserver = "mekeweserver.main:start"
