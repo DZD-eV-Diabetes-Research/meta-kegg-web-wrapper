@@ -26,6 +26,7 @@ dependencies = [
     "pip-tools",
     "python-multipart",
     "slowapi",
+    "redis",
 ]
 dynamic = ["version"]
 

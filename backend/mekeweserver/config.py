@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Optional
+from typing import Literal, Optional, TypedDict
 from pathlib import Path
 from typing_extensions import Self
 from pydantic import (
@@ -16,6 +16,25 @@ import socket
 env_file_path = os.environ.get(
     "MEKEWESERVER_DOT_ENV_FILE", Path(__file__).parent / ".env"
 )
+
+
+class RedisConnectionParams(BaseSettings):
+    host: str = "localhost"  # Default Redis host
+    port: int = 6379  # Default Redis port
+    db: int = 0  # Default Redis database (0)
+    username: Optional[str] = None  # No username by default
+    password: Optional[str] = None  # No password by default
+    socket_timeout: Optional[float] = None  # No timeout by default
+    socket_connect_timeout: Optional[float] = None  # No connect timeout by default
+    max_connections: Optional[int] = None  # No limit on max connections
+    retry_on_timeout: bool = False  # Default: don't retry on timeout
+    ssl: bool = False  # Default: SSL disabled
+    ssl_certfile: Optional[str] = None  # No SSL certfile by default
+    ssl_keyfile: Optional[str] = None  # No SSL keyfile by default
+    ssl_ca_certs: Optional[str] = None  # No SSL CA certs by default
+    ssl_check_hostname: bool = False  # Default: don't check hostname in SSL
+    socket_keepalive: Optional[bool] = None  # No socket keepalive by default
+    decode_responses: bool = False
 
 
 class Config(BaseSettings):
@@ -84,6 +103,12 @@ class Config(BaseSettings):
     MAX_PIPELINE_RUNS_PER_HOUR_PER_IP: int = Field(
         default=5,
         description="Rate limiting parameter. How many pipeline runs can be started from one IP.",
+    )
+
+    REDIS_CONNECTION_PARAMS: RedisConnectionParams | None = Field(
+        default=None,
+        description="Connection params for a redis database to be used as backend storage/cache. Is not set a python fakeredis process will be started to be used as backend storage/cache.",
+        examples=[RedisConnectionParams(host="localhost", port=6379)],
     )
 
     class Config:

@@ -34,10 +34,11 @@ def _add_api_middleware(app: FastAPI):
     # )
 
 
-def _add_api_routes(app: FastAPI):
-    from mekeweserver.routes import get_routes
+def _add_app_routers(app: FastAPI):
+    from mekeweserver.routes import get_api_router, get_client_router
 
-    app.include_router(get_routes(app))
+    app.include_router(get_api_router(app))
+    app.include_router(get_client_router(app))
 
 
 def _add_rate_limiter(app: FastAPI):
@@ -56,5 +57,5 @@ def get_fastapi_app() -> FastAPI:
 
     _add_api_middleware(app)
     _add_rate_limiter(app)
-    _add_api_routes(app)
+    _add_app_routers(app)
     return app

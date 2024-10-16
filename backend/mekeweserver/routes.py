@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, Dict, List, Type
+from typing import Annotated, Optional, Dict, List, Type, Literal
 import os
 import pydantic
 import uuid
@@ -23,7 +23,13 @@ from mekeweserver.config import Config
 config = Config()
 
 
-from mekeweserver.model import PipelineInputParams, PipelineRunTicket, PipelineRunStatus
+from mekeweserver.model import (
+    MetaKeggPipelineInputParams,
+    PipelineRunTicket,
+    PipelineRunStatus,
+    MetaKeggPipelineAnalysisMethods,
+    MetaKeggPipelineAnalysisMethod,
+)
 
 
 def http_exception_to_resp_desc(
@@ -69,23 +75,66 @@ for e in pipeline_status_exceptions:
     pipeline_status_exceptions_reponse_models.update(http_exception_to_resp_desc(e))
 
 
-def get_routes(app: FastAPI):
-    mekewe_router: APIRouter = APIRouter()
+def get_api_router(app: FastAPI) -> APIRouter:
+    mekewe_router: APIRouter = APIRouter(prefix="/api")
     limiter: Limiter = app.state.limiter
+
+    @mekewe_router.get(
+        "/analysis",
+        response_model=List[MetaKeggPipelineAnalysisMethod],
+        description="List all MetaKEGG analysis methods available. The name will be used to start a anylsises pipeline run in endpoint `/pipeline/{pipeline_ticket_id}/run/...`",
+        tags=["Analysis Method"],
+    )
+    @limiter.limit(f"1/second")
+    async def list_available_analysis_methods(
+        request: Request,
+    ):
+        return [e.value for e in MetaKeggPipelineAnalysisMethods]
 
     @mekewe_router.post(
         "/pipeline",
         response_model=PipelineRunTicket,
-        description="Trigger a meta Kegg pipeline run. The pipeline-run will not start immediatily but be queued. The response of this endpoint will be a ticket that can be used to track the status of your pipeline run.",
+        description="Define a new meta Kegg pipeline run. The pipeline-run will not start immediatily but be queued. The response of this endpoint will be a ticket that can be used to track the status of your pipeline run.",
         tags=["Pipeline"],
     )
     @limiter.limit(f"{config.MAX_PIPELINE_RUNS_PER_HOUR_PER_IP}/hour")
-    async def start_meta_kegg_pipeline_run(
+    async def initialize_a_metakegg_pipeline_run_defintion(
+        request: Request,
+        pipeline_params: Annotated[MetaKeggPipelineInputParams, Query()] = None,
+    ):
+        raise NotImplementedError()
+
+    @mekewe_router.post(
+        "/pipeline/{pipeline_ticket_id}/upload",
+        response_model=PipelineRunTicket,
+        description="Add a file to an non started/queued pipeline-run definition",
+        tags=["Pipeline"],
+    )
+    @limiter.limit(f"5/minute")
+    async def attach_file_to_meta_kegg_pipeline_run(
         request: Request,
         file: UploadFile = File(...),
-        pipeline_params: Annotated[PipelineInputParams, Form()] = None,
     ):
-        return PipelineRunTicket()
+        raise NotImplementedError()
+
+    analysis_method_names_type_hint = Literal[
+        tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethods])
+    ]
+
+    @mekewe_router.get(
+        "/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}",
+        response_model=PipelineRunStatus,
+        responses=http_exception_to_resp_desc(pipelinerun_not_found_expection),
+        description="Check the status of a triggered pipeline run.",
+        tags=["Pipeline"],
+    )
+    @limiter.limit(f"1/second")
+    async def start_pipeline_run(
+        request: Request,
+        pipeline_ticket_id: uuid.UUID,
+        analysis_method_name: analysis_method_names_type_hint,
+    ):
+        return PipelineRunStatus()
 
     @mekewe_router.get(
         "/pipeline/{pipeline_ticket_id}/status",
@@ -115,7 +164,13 @@ def get_routes(app: FastAPI):
     ):
         return PipelineRunStatus()
 
-    @mekewe_router.get(
+    return mekewe_router
+
+
+def get_client_router(app: FastAPI) -> APIRouter:
+    mekeweclient_router: APIRouter = APIRouter()
+
+    @mekeweclient_router.get(
         "/{path_name:path}", description="Client serving path", tags=["Webclient"]
     )
     async def serve_frontend(path_name: Optional[str] = None):
@@ -125,4 +180,4 @@ def get_routes(app: FastAPI):
             file = os.path.join(config.FRONTEND_FILES_DIR, "index.html")
         return FileResponse(file)
 
-    return mekewe_router
+    return mekeweclient_router
