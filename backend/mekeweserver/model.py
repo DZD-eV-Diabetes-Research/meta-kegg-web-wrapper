@@ -182,4 +182,5 @@ class PipelineRunStatus(BaseModel):
     )
     ticket: PipelineRunTicket
     pipeline_params: MetaKeggPipelineInputParams
-    pipeline_input_files: List[str] = None
+    pipeline_analyses_method: MetaKeggPipelineAnalysisMethod | None = None
+    pipeline_input_files: List[str] = Field(default_factory=list)

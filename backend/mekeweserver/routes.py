@@ -115,6 +115,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         file: UploadFile = File(...),
     ):
+        # PipelineClerk attach_pipeline_input_file
         raise NotImplementedError()
 
     analysis_method_names_type_hint = Literal[
