@@ -19,6 +19,8 @@ from pydantic import BaseModel, Field
 
 
 from mekeweserver.config import Config
+from mekeweserver.db import get_redis_client
+from mekeweserver.pipeline_status_clerk import PipelineStatusClerk
 
 config = Config()
 
@@ -78,6 +80,7 @@ for e in pipeline_status_exceptions:
 def get_api_router(app: FastAPI) -> APIRouter:
     mekewe_router: APIRouter = APIRouter(prefix="/api")
     limiter: Limiter = app.state.limiter
+    redis = get_redis_client()
 
     @mekewe_router.get(
         "/analysis",
@@ -101,8 +104,11 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def initialize_a_metakegg_pipeline_run_defintion(
         request: Request,
         pipeline_params: Annotated[MetaKeggPipelineInputParams, Query()] = None,
-    ):
-        raise NotImplementedError()
+    ) -> PipelineRunTicket:
+        ticket: PipelineRunTicket = PipelineStatusClerk(
+            redis=redis
+        ).init_new_pipeline_run(pipeline_params)
+        return ticket
 
     @mekewe_router.post(
         "/pipeline/{pipeline_ticket_id}/upload",
@@ -113,10 +119,12 @@ def get_api_router(app: FastAPI) -> APIRouter:
     @limiter.limit(f"5/minute")
     async def attach_file_to_meta_kegg_pipeline_run(
         request: Request,
+        pipeline_ticket_id: uuid.UUID,
         file: UploadFile = File(...),
-    ):
-        # PipelineClerk attach_pipeline_input_file
-        raise NotImplementedError()
+    ) -> PipelineRunStatus:
+        return PipelineStatusClerk(redis=redis).attach_input_file(
+            pipeline_ticket_id, file
+        )
 
     analysis_method_names_type_hint = Literal[
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethods])
@@ -149,7 +157,10 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         pipeline_ticket_id: uuid.UUID,
     ):
-        return PipelineRunStatus()
+        status: PipelineRunStatus = PipelineStatusClerk(
+            redis=redis
+        ).get_pipeline_status(pipeline_ticket_id)
+        return status
 
     @mekewe_router.get(
         "/pipeline/{pipeline_ticket_id}/result",

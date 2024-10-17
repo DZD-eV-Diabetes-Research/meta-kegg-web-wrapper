@@ -1,0 +1,20 @@
+services:
+  redis:
+    image: redis:alpine
+    restart: no
+    network_mode: "host"
+    #command: /bin/sh -c "redis-server --requirepass ${REDIS_HOST_PASSWORD}"
+    healthcheck:
+      #test: [ "CMD", "redis-cli", "-a", "${REDIS_HOST_PASSWORD}", "--raw", "incr", "ping" ]
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  redis-insight:
+    # https://hub.docker.com/r/redis/redisinsight
+    image: redis/redisinsight:latest
+    network_mode: "host"
+    restart: no
+    environment:
+      - RI_APP_PORT=5540
+      - RI_APP_HOST=0.0.0.0

@@ -92,58 +92,60 @@ class MetaKeggPipelineInputParams(BaseModel):
         default="logFC",
         description="Column name for log2fc values in the sheet_name_genes",
     )
-    count_threshold: int = Field(
+    count_threshold: Optional[int] = Field(
         default=2,
         description="Minimum number of genes per pathway, for pathway to be drawn. Default value : 2",
     )
-    pathway_pvalue: float = Field(
+    pathway_pvalue: Optional[float] = Field(
         default=None, description="Raw p-value threshold for the pathways"
     )
-    input_label: str = Field(
+    input_label: Optional[str] = Field(
         default=None, description="Input label or list of labels for multiple inputs"
     )
-    folder_extension: str = Field(
+    folder_extension: Optional[str] = Field(
         default=None,
         description="Folder extension to be appended to the default naming scheme. If None and default folder exists, will overwrite folder",
     )
-    methylation_path: str = Field(
+    methylation_path: Optional[str] = Field(
         default=None, description="Path to methylation data (Excel , CSV or TSV format)"
     )
-    methylation_pvalue: str = Field(
+    methylation_pvalue: Optional[str] = Field(
         default=None, description="Column name for methylation p-value"
     )
-    methylation_genes: str = Field(
+    methylation_genes: Optional[str] = Field(
         default=None, description="Column name for methylation gene symbols"
     )
-    methylation_pvalue_thresh: float = Field(
+    methylation_pvalue_thresh: Optional[float] = Field(
         default=0.05,
         description="P-value threshold for the methylation values",
     )
-    methylation_probe_column: str = Field(
+    methylation_probe_column: Optional[str] = Field(
         default=None, description="Column name for the methylation probes."
     )
-    probes_to_cgs: str = Field(
+    probes_to_cgs: Optional[str] = Field(
         default=False,
         description="If True, will correct the probes to positions, delete duplicated positions and keep the first CG.",
     )
-    miRNA_path: str = Field(
+    miRNA_path: Optional[str] = Field(
         default=None, description="Path to miRNA data (Excel , CSV or TSV format)"
     )
-    miRNA_pvalue: str = Field(default=None, description="Column name for miRNA p-value")
-    miRNA_genes: str = Field(
+    miRNA_pvalue: Optional[str] = Field(
+        default=None, description="Column name for miRNA p-value"
+    )
+    miRNA_genes: Optional[str] = Field(
         default=None, description="Column name for miRNA gene symbols"
     )
-    miRNA_pvalue_thresh: float = Field(
+    miRNA_pvalue_thresh: Optional[float] = Field(
         default=0.05, description="P-value threshold for the miRNA values"
     )
-    miRNA_ID_column: str = Field(
+    miRNA_ID_column: Optional[str] = Field(
         default=None, description="Column name for the miRNA IDs."
     )
-    benjamini_threshold: float = Field(
+    benjamini_threshold: Optional[float] = Field(
         default=None,
         description="Benjamini Hochberg p-value threshold for the pathway",
     )
-    save_to_eps: str = Field(
+    save_to_eps: Optional[str] = Field(
         default=False,
         description="True/False statement to save the maps and colorscales or legends as seperate .eps files in addition to the .pdf exports",
     )
@@ -151,6 +153,9 @@ class MetaKeggPipelineInputParams(BaseModel):
     #    default=None,
     #    description="Name of output folder. Will overpower default scheme. Combines with extension",
     # )
+    compounds_list: Optional[List[str]] = Field(
+        default=None, description="List of compound IDs to mapped in pathways if found."
+    )
 
 
 class PipelineRunTicket(BaseModel):
@@ -165,7 +170,7 @@ class PipelineRunStatus(BaseModel):
         default="initialized",
         description=f"When a new pipeline run is started it will be `queued` first. After there is slot free in the background worker it start `running`. based on the failure or success of this run the state will be `failed` or `success`. The result of a pipeline run will be cleaned/deleted after {config.PURGE_PIPELINE_RESULT_AFTER_MIN} minutes and not be available anymore. After that the state will be `expired`",
     )
-    place_in_queue: int = Field(
+    place_in_queue: Optional[int] = Field(
         default=None,
         description="Shows how many pipeline runs are ahead of a queued pipeline-run",
         examples=[4],
@@ -183,4 +188,4 @@ class PipelineRunStatus(BaseModel):
     ticket: PipelineRunTicket
     pipeline_params: MetaKeggPipelineInputParams
     pipeline_analyses_method: MetaKeggPipelineAnalysisMethod | None = None
-    pipeline_input_files: List[str] = Field(default_factory=list)
+    pipeline_input_files: Optional[List[str]] = Field(default_factory=list)

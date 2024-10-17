@@ -4,21 +4,29 @@ import uuid
 import shutil
 from fastapi import UploadFile
 from mekeweserver.config import RedisConnectionParams
+import redis
 from mekeweserver.model import (
     PipelineRunStatus,
     PipelineRunTicket,
     MetaKeggPipelineInputParams,
     MetaKeggPipelineAnalysisMethods,
 )
+from config import Config
+
+config = Config()
 
 
 class PipelineStatusClerk:
     REDIS_NAME_PIPELINE_STATES = "pipeline_states"
     # REDIS_NAME_PIPELINE_QUEUE = "pipeline_queue"
 
-    def __init__(self, redis_con: RedisConnectionParams, file_storage_base_dir: Path):
-        self.file_storage_base_dir = file_storage_base_dir
-        self.redis = redis.Redis(**redis_con.model_dump)
+    def __init__(self, redis: redis.Redis, file_storage_base_dir: Path = None):
+        self.file_storage_base_dir = (
+            file_storage_base_dir
+            if file_storage_base_dir is not None
+            else config.RESULT_CACHE_DIR
+        )
+        self.redis = redis
 
     def init_new_pipeline_run(
         self, params: MetaKeggPipelineInputParams
@@ -35,9 +43,9 @@ class PipelineStatusClerk:
         return ticket
 
     def get_pipeline_status(self, ticket_id: uuid.UUID) -> PipelineRunStatus:
-        return PipelineRunStatus.model_validate_json(
-            self.redis.hget(self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex)
-        )
+        raw_data: str = self.redis.hget(self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex)
+        data = PipelineRunStatus.model_validate_json(raw_data)
+        return data
 
     def set_pipeline_status(self, pipeline_status: PipelineRunStatus):
         self.redis.hset(
@@ -46,7 +54,9 @@ class PipelineStatusClerk:
             pipeline_status.model_dump_json(),
         )
 
-    def attach_input_file(self, ticket_id: uuid.UUID, upload_file_object: UploadFile):
+    def attach_input_file(
+        self, ticket_id: uuid.UUID, upload_file_object: UploadFile
+    ) -> PipelineRunStatus:
         # clean filename
         keepcharacters = (" ", ".", "_", "-")
         clean_file_name = "".join(
@@ -67,6 +77,7 @@ class PipelineStatusClerk:
         pipeline_status = self.get_pipeline_status(ticket_id)
         pipeline_status.pipeline_input_files.append(clean_file_name)
         self.set_pipeline_status(pipeline_status)
+        return pipeline_status
 
     def set_pipeline_run_as_queud(
         self, ticket_id: uuid.UUID, analysis_method_name: str

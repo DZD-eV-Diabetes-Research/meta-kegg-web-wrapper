@@ -111,6 +111,11 @@ class Config(BaseSettings):
         examples=[RedisConnectionParams(host="localhost", port=6379)],
     )
 
+    RESULT_CACHE_DIR: str = Field(
+        default="/tmp/mekewe_cache",
+        description="Storage directory for MetaKEGG Pipeline ressults.",
+    )
+
     class Config:
         env_nested_delimiter = "__"
         env_file = env_file_path

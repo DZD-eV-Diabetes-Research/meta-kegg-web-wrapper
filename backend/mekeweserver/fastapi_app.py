@@ -3,7 +3,8 @@ import getversion
 from fastapi import Depends
 from fastapi import FastAPI
 import getversion.plugin_setuptools_scm
-from starlette.middleware.sessions import SessionMiddleware
+
+# from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -35,7 +36,7 @@ def _add_api_middleware(app: FastAPI):
 
 
 def _add_app_routers(app: FastAPI):
-    from mekeweserver.routes import get_api_router, get_client_router
+    from mekeweserver.fastapi_routes import get_api_router, get_client_router
 
     app.include_router(get_api_router(app))
     app.include_router(get_client_router(app))
