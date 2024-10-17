@@ -43,7 +43,7 @@ def start_fakeredis_server(
     hostname: str = "localhost", port: int = 19000, wait_for_start_timeout_sec=3
 ) -> FakeredisServerProcess:
     #  Start fakeredis server
-    fakeredis = FakeredisServerProcess("localhost", 19001)
+    fakeredis = FakeredisServerProcess(hostname, port)
     fakeredis.start()
     time.sleep(0.3)
     if not fakeredis.is_alive():
@@ -59,7 +59,7 @@ def start_fakeredis_server(
         boot_time + wait_for_start_timeout_sec > time.time() and last_error is not None
     ):
         try:
-            test_client = redis.Redis(host="localhost", port=19001)
+            test_client = redis.Redis(host=hostname, port=port)
             test_client.ping()
             last_error = None
         except (ConnectionError, ConnectionRefusedError) as e:
@@ -73,6 +73,7 @@ def start_fakeredis_server(
 
 
 def stop_fakeredis_server(server: FakeredisServerProcess):
+    log.info("Stop fakeredis-py server...")
     server.stop()
     server.join(timeout=3)
 
@@ -90,18 +91,20 @@ def get_redis_client() -> redis.Redis:
         client = redis.Redis(host=LOCAL_FAKEREDIS_HOSTNAME, port=LOCAL_FAKEREDIS_PORT)
         if check_redis_server_running(redis_client=client):
             return client
-        # first call and no redis server running. Lets start a fakeredisserver
+        # this is our first call and there is no redis server running. Lets start a fakeredisserver...
         log.warning(
-            "No redis database connection provided in config.REDIS_CONNECTION_PARAMS. MetaKEGGWeb will try to boot a fakeredis-py server. this should not be used in production!"
+            f"No redis database connection provided in config.REDIS_CONNECTION_PARAMS. MetaKEGGWeb will try to boot a fakeredis-py server @ {LOCAL_FAKEREDIS_HOSTNAME}:{LOCAL_FAKEREDIS_PORT}. this should not be used in production!"
         )
-        fake_redis_server = start_fakeredis_server()
+        fake_redis_server = start_fakeredis_server(
+            hostname=LOCAL_FAKEREDIS_HOSTNAME, port=LOCAL_FAKEREDIS_PORT
+        )
 
         def exit_handler():
             # shutdown redisfake server when we exit python
             stop_fakeredis_server(fake_redis_server)
 
         atexit.register(exit_handler)
-
+        time.sleep(1)
         return client
     else:
-        redis.Redis(**config.REDIS_CONNECTION_PARAMS.model_dump())
+        return redis.Redis(**config.REDIS_CONNECTION_PARAMS.model_dump())

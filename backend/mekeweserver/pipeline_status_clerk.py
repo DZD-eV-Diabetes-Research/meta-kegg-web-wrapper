@@ -18,7 +18,7 @@ config = Config()
 
 class PipelineStatusClerk:
     REDIS_NAME_PIPELINE_STATES = "pipeline_states"
-    # REDIS_NAME_PIPELINE_QUEUE = "pipeline_queue"
+    REDIS_NAME_PIPELINE_QUEUE = "pipeline_queue"
 
     def __init__(self, redis: redis.Redis, file_storage_base_dir: Path = None):
         self.file_storage_base_dir = (
@@ -42,7 +42,9 @@ class PipelineStatusClerk:
         self.set_pipeline_status(pipeline_status)
         return ticket
 
-    def get_pipeline_status(self, ticket_id: uuid.UUID) -> PipelineRunStatus:
+    def get_pipeline_status(
+        self, ticket_id: uuid.UUID, raise_exception_if_not_exists: Exception = None
+    ) -> PipelineRunStatus:
         raw_data: str = self.redis.hget(self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex)
         data = PipelineRunStatus.model_validate_json(raw_data)
         return data
@@ -92,6 +94,20 @@ class PipelineStatusClerk:
             ]
         )
         self.set_pipeline_status(pipeline_status)
+        self.redis.lpush(self.REDIS_NAME_PIPELINE_QUEUE, ticket_id)
+        return pipeline_status
+
+    def get_next_pipeline_run_from_queue(
+        self, set_status_running: bool = True
+    ) -> PipelineRunStatus | None:
+        raw_ticket_id = self.redis.rpop(self.REDIS_NAME_PIPELINE_QUEUE)
+        if raw_ticket_id is None:
+            return None
+        next_ticket_id = uuid.UUID(raw_ticket_id)
+        pipeline_status = self.get_pipeline_status(next_ticket_id)
+        if set_status_running:
+            pipeline_status.state = "running"
+            self.set_pipeline_status(pipeline_status)
         return pipeline_status
 
     def set_pipeline_state_as_running(

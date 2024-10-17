@@ -48,27 +48,27 @@ def http_exception_to_resp_desc(
     }
 
 
-pipelinerun_not_found_expection = HTTPException(
+pipelinerun_not_found_exception = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
     detail="Pipeline-run could not be found.",
 )
-pipelinerun_expired_expection = HTTPException(
+pipelinerun_expired_exception = HTTPException(
     status_code=status.HTTP_410_GONE,
     detail="Pipeline-run expired and result is cleaned.",
 )
-pipelinerun_not_finished_expection = HTTPException(
+pipelinerun_not_finished_exception = HTTPException(
     status_code=status.HTTP_425_TOO_EARLY,
     detail="Pipeline-run is not finished.",
 )
-pipelinerun_failed_expection = HTTPException(
+pipelinerun_failed_exception = HTTPException(
     status_code=status.HTTP_424_FAILED_DEPENDENCY,
-    detail="Pipeline-run failed.",
+    detail="Pipeline-run failed. Check endpoint '/pipeline/{pipeline_ticket_id}/status' for details",
 )
 pipeline_status_exceptions: List[HTTPException] = [
-    pipelinerun_not_found_expection,
-    pipelinerun_expired_expection,
-    pipelinerun_not_finished_expection,
-    pipelinerun_failed_expection,
+    pipelinerun_not_found_exception,
+    pipelinerun_expired_exception,
+    pipelinerun_not_finished_exception,
+    pipelinerun_failed_exception,
 ]
 pipeline_status_exceptions_reponse_models: Dict[
     int, Dict[str, str | Type[pydantic.BaseModel]]
@@ -82,6 +82,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     limiter: Limiter = app.state.limiter
     redis = get_redis_client()
 
+    ##ENDPOINT: /analysis
     @mekewe_router.get(
         "/analysis",
         response_model=List[MetaKeggPipelineAnalysisMethod],
@@ -94,6 +95,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     ):
         return [e.value for e in MetaKeggPipelineAnalysisMethods]
 
+    ##ENDPOINT: /pipeline
     @mekewe_router.post(
         "/pipeline",
         response_model=PipelineRunTicket,
@@ -110,6 +112,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         ).init_new_pipeline_run(pipeline_params)
         return ticket
 
+    ##ENDPOINT: /pipeline/{pipeline_ticket_id}/upload
     @mekewe_router.post(
         "/pipeline/{pipeline_ticket_id}/upload",
         response_model=PipelineRunTicket,
@@ -130,10 +133,11 @@ def get_api_router(app: FastAPI) -> APIRouter:
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethods])
     ]
 
+    ##ENDPOINT: /pipeline/{pipeline_ticket_id}/run/{analysis_method_name}
     @mekewe_router.get(
         "/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}",
         response_model=PipelineRunStatus,
-        responses=http_exception_to_resp_desc(pipelinerun_not_found_expection),
+        responses=http_exception_to_resp_desc(pipelinerun_not_found_exception),
         description="Check the status of a triggered pipeline run.",
         tags=["Pipeline"],
     )
@@ -142,13 +146,16 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         pipeline_ticket_id: uuid.UUID,
         analysis_method_name: analysis_method_names_type_hint,
-    ):
-        return PipelineRunStatus()
+    ) -> PipelineRunStatus:
+        return PipelineStatusClerk(redis=redis).set_pipeline_run_as_queud(
+            pipeline_ticket_id, analysis_method_name=analysis_method_name
+        )
 
+    ##ENDPOINT: /pipeline/{pipeline_ticket_id}/status
     @mekewe_router.get(
         "/pipeline/{pipeline_ticket_id}/status",
         response_model=PipelineRunStatus,
-        responses=http_exception_to_resp_desc(pipelinerun_not_found_expection),
+        responses=http_exception_to_resp_desc(pipelinerun_not_found_exception),
         description="Check the status of a triggered pipeline run.",
         tags=["Pipeline"],
     )
@@ -162,6 +169,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         ).get_pipeline_status(pipeline_ticket_id)
         return status
 
+    ##ENDPOINT: /pipeline/{pipeline_ticket_id}/result
     @mekewe_router.get(
         "/pipeline/{pipeline_ticket_id}/result",
         response_class=FileResponse,
@@ -174,7 +182,19 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         pipeline_ticket_id: uuid.UUID,
     ):
-        return PipelineRunStatus()
+        status: PipelineRunStatus | None = PipelineStatusClerk(
+            redis=redis
+        ).get_pipeline_status(pipeline_ticket_id)
+        if status is None:
+            raise pipelinerun_not_found_exception
+        if status.state == "failed":
+            raise pipelinerun_failed_exception
+        elif status.state in ["initialized", "running", "queued"]:
+            raise pipelinerun_not_finished_exception
+        elif status.state == "expired":
+            raise pipelinerun_expired_exception
+
+        return FileResponse(status.result_path)
 
     return mekewe_router
 
