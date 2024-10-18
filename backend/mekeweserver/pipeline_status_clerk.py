@@ -24,7 +24,7 @@ class PipelineStatusClerk:
         self.file_storage_base_dir = (
             file_storage_base_dir
             if file_storage_base_dir is not None
-            else config.RESULT_CACHE_DIR
+            else config.PIPELINE_RUNS_RESULT_CACHE_DIR
         )
         self.redis = redis
 

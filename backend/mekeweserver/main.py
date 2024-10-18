@@ -6,48 +6,61 @@ import asyncio
 import uvicorn
 from uvicorn.config import LOGGING_CONFIG
 from fastapi.openapi.utils import get_openapi
+from pathlib import Path, PurePath
+import sys, os
 
 # Add meta kegg server to global Python modules.
-# This way we address mekeweserver as a module for imports without installing it first.
+# This way we address mekeweserver as a module for imports without the need of installing it first.
+# this is convenient for local development
 if __name__ == "__main__":
-    from pathlib import Path
-    import sys, os
-
     MODULE_DIR = Path(__file__).parent
     MODULE_PARENT_DIR = MODULE_DIR.parent.absolute()
     sys.path.insert(0, os.path.normpath(MODULE_PARENT_DIR))
 
 from mekeweserver.config import Config
+from mekeweserver.log import get_logger
 
 config = Config()
 
 
-def dump_open_api_spec(app: FastAPI, path: Path):
-    with open(path, "w") as f:
-        json.dump(
-            get_openapi(
-                title=app.title,
-                version=app.version,
-                openapi_version=app.openapi_version,
-                description=app.description,
-                routes=app.routes,
-            ),
-            f,
-        )
+def dump_open_api_spec(app: FastAPI):
+    if config.DUMP_OPEN_API_SPECS_ON_BOOT:
+        path = Path(f"{Path(__file__).parent}/../../openapi.json")
+        if config.DUMP_OPEN_API_SPECS_ON_BOOT_DIR is not None:
+            path = (
+                Path(config.DUMP_OPEN_API_SPECS_ON_BOOT_DIR)
+                if config.DUMP_OPEN_API_SPECS_ON_BOOT_DIR.lower().endswith(".json")
+                else Path(
+                    PurePath(config.DUMP_OPEN_API_SPECS_ON_BOOT_DIR, "openapi.json")
+                )
+            )
+        get_logger().info(f"Dump openapi specifications at '{path.resolve()}'")
+        with open(path, "w") as f:
+            json.dump(
+                get_openapi(
+                    title=app.title,
+                    version=app.version,
+                    openapi_version=app.openapi_version,
+                    description=app.description,
+                    routes=app.routes,
+                ),
+                f,
+            )
 
 
 def run_server():
+    import getversion
     import mekeweserver
 
+    mekewe_server_version = getversion.get_module_version(mekeweserver)[0]
     from mekeweserver.log import (
-        get_logger,
         get_loglevel,
         get_uvicorn_loglevel,
         APP_LOGGER_DEFAULT_NAME,
     )
 
     log = get_logger()
-
+    log.info(f"Start MetaKEGG Web API Server version '{mekewe_server_version}'")
     log.debug("----CONFIG-----")
     log.debug(yaml.dump(json.loads(config.model_dump_json()), sort_keys=False))
     log.debug("----CONFIG-END-----")
@@ -86,8 +99,9 @@ def run_server():
         log_config=uvicorn_log_config,
         loop=event_loop,
     )
+    dump_open_api_spec(app)
     uvicorn_server = uvicorn.Server(config=uvicorn_config)
-    dump_open_api_spec(app, Path(f"{Path(__file__).parent}/../../openapi.json"))
+
     event_loop.run_until_complete(uvicorn_server.serve())
 
 

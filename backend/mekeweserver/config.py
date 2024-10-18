@@ -111,9 +111,18 @@ class Config(BaseSettings):
         examples=[RedisConnectionParams(host="localhost", port=6379)],
     )
 
-    RESULT_CACHE_DIR: str = Field(
+    PIPELINE_RUNS_RESULT_CACHE_DIR: str = Field(
         default="/tmp/mekewe_cache",
         description="Storage directory for MetaKEGG Pipeline ressults.",
+    )
+
+    DUMP_OPEN_API_SPECS_ON_BOOT: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the server will dump an openapi.json file in the root dir of this repo on boot.",
+    )
+    DUMP_OPEN_API_SPECS_ON_BOOT_DIR: Optional[str] = Field(
+        default=None,
+        description="If not None and DUMP_OPEN_API_SPECS_ON_BOOT set to true, the server will dump a openapi.json file in this directory on boot.",
     )
 
     class Config:

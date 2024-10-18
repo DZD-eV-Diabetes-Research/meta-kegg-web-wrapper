@@ -24,7 +24,7 @@ class MetakeggPipelineProcessor:
         self.output_directory = output_directory
         self.pipeline_params = pipeline_params
         self.error_message: str | None = None
-        self.pipeline = p = Pipeline(
+        self.pipeline = Pipeline(
             input_file_path=[str(p.resolve()) for p in self.input_file_pathes],
             output_folder_name=str(self.output_directory.resolve()),
             **self.pipeline_params.model_dump(),
