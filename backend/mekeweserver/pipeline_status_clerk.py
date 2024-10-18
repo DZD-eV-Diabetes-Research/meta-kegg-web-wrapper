@@ -143,7 +143,9 @@ class MetaKeggPipelineStateManager:
         raw_ticket_id = self.redis_client.rpop(self.REDIS_NAME_PIPELINE_QUEUE)
         print("")
         print("raw_ticket_id", raw_ticket_id)
-        print("")
+        print(
+            "TODO: FIX THIS. Failes in test and shows that backgroudn worker is not terminated properly"
+        )
         if raw_ticket_id is None:
             return None
         next_ticket_id = uuid.UUID(raw_ticket_id)
