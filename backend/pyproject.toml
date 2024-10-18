@@ -17,6 +17,7 @@ classifiers = [
 ]
 dependencies = [
     "metaKEGG @ git+ssh://github.com/dife-bioinformatics/metaKEGG#egg=metaKEGG",
+    "six",                                                                       # six seems to be needed if metaKEGG was installed from github. investigate later
     "uvicorn",
     "fastapi",
     "pyyaml",

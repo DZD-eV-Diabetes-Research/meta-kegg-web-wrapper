@@ -1,6 +1,7 @@
 import os
+import uuid
 from typing import Literal, Optional, TypedDict
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing_extensions import Self
 from pydantic import (
     Field,
@@ -81,8 +82,18 @@ class Config(BaseSettings):
         default=None,
         description="The protocol detection can fail in certain reverse proxy situations. This option allows you to manually override the automatic detection",
     )
-
-    PURGE_PIPELINE_RESULT_AFTER_MIN: int = 240
+    PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER: int = Field(
+        default=240,
+        description="If a pipeline run is initialized but not started, it will be considered as abandoned after this time and be deleted.",
+    )
+    PIPELINE_RESULT_EXPIRED_AFTER_MIN: int = Field(
+        default=1440,
+        description="If a pipeline has finished, it will be considered as obsolete after the result will be deleted to save storage. The metadata will still be existent and the user will be notified that the pipeline is expired.",
+    )
+    PIPELINE_RESULT_DELETED_AFTER_MIN: int = Field(
+        default=1440,
+        description="If a pipeline has finished and is expired, all its metadata will be wiped after this amounts of minutes after expiring. If a user tries to revisit it, there will be a 404 error.",
+    )
 
     def get_server_url(self) -> AnyHttpUrl:
         proto: Literal["https", "http"] = "http"
@@ -111,7 +122,7 @@ class Config(BaseSettings):
         examples=[RedisConnectionParams(host="localhost", port=6379)],
     )
 
-    PIPELINE_RUNS_RESULT_CACHE_DIR: str = Field(
+    PIPELINE_RUNS_CACHE_DIR: str = Field(
         default="/tmp/mekewe_cache",
         description="Storage directory for MetaKEGG Pipeline ressults.",
     )

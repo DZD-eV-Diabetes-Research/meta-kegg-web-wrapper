@@ -1,56 +1,55 @@
+from typing import Dict, List
 import redis
 from pathlib import Path, PurePath
 import uuid
+import datetime
 import shutil
 from fastapi import UploadFile
 from mekeweserver.config import RedisConnectionParams
 import redis
 from mekeweserver.model import (
-    PipelineRunStatus,
-    PipelineRunTicket,
+    MetaKeggPipelineDef,
+    MetaKeggPipelineTicket,
     MetaKeggPipelineInputParams,
     MetaKeggPipelineAnalysisMethods,
 )
-from config import Config
+from mekeweserver.config import Config
 
 config = Config()
 
 
-class PipelineStatusClerk:
+class MetaKeggPipelineStateManager:
     REDIS_NAME_PIPELINE_STATES = "pipeline_states"
     REDIS_NAME_PIPELINE_QUEUE = "pipeline_queue"
 
-    def __init__(self, redis: redis.Redis, file_storage_base_dir: Path = None):
-        self.file_storage_base_dir = (
-            file_storage_base_dir
-            if file_storage_base_dir is not None
-            else config.PIPELINE_RUNS_RESULT_CACHE_DIR
-        )
-        self.redis = redis
+    def __init__(self, redis_client: redis.Redis):
+        self.redis_client = redis_client
 
     def init_new_pipeline_run(
         self, params: MetaKeggPipelineInputParams
-    ) -> PipelineRunTicket:
-        ticket = PipelineRunTicket()
-        pipeline_status = PipelineRunStatus(
+    ) -> MetaKeggPipelineTicket:
+        ticket = MetaKeggPipelineTicket()
+        pipeline_status = MetaKeggPipelineDef(
             state="initialized",
             place_in_queue=None,
             ticket=ticket,
             pipeline_params=params,
-            pipeline_input_files=None,
+            pipeline_input_file_names=None,
         )
         self.set_pipeline_status(pipeline_status)
         return ticket
 
     def get_pipeline_status(
         self, ticket_id: uuid.UUID, raise_exception_if_not_exists: Exception = None
-    ) -> PipelineRunStatus:
-        raw_data: str = self.redis.hget(self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex)
-        data = PipelineRunStatus.model_validate_json(raw_data)
+    ) -> MetaKeggPipelineDef:
+        raw_data: str = self.redis_client.hget(
+            self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex
+        )
+        data = MetaKeggPipelineDef.model_validate_json(raw_data)
         return data
 
-    def set_pipeline_status(self, pipeline_status: PipelineRunStatus):
-        self.redis.hset(
+    def set_pipeline_status(self, pipeline_status: MetaKeggPipelineDef):
+        self.redis_client.hset(
             self.REDIS_NAME_PIPELINE_STATES,
             pipeline_status.ticket.id.hex,
             pipeline_status.model_dump_json(),
@@ -58,15 +57,20 @@ class PipelineStatusClerk:
 
     def attach_input_file(
         self, ticket_id: uuid.UUID, upload_file_object: UploadFile
-    ) -> PipelineRunStatus:
+    ) -> MetaKeggPipelineDef:
+        if upload_file_object.filename is None:
+            upload_file_object.filename = uuid.uuid4().hex
         # clean filename
         keepcharacters = (" ", ".", "_", "-")
         clean_file_name = "".join(
             c for c in upload_file_object.filename if c.isalnum() or c in keepcharacters
         ).rstrip()
+
+        pipeline_status = self.get_pipeline_status(ticket_id)
+
         # define storage path for file
         internal_file_path = Path(
-            PurePath(self.file_storage_base_dir, ticket_id.hex, clean_file_name)
+            PurePath(pipeline_status.get_input_file_dir(), clean_file_name)
         )
         internal_file_dir = internal_file_path.parent
         internal_file_dir.mkdir(parents=True, exist_ok=True)
@@ -76,67 +80,159 @@ class PipelineStatusClerk:
             target_file.write(upload_file_object.file.read())
 
         # define file as pipeline input file
-        pipeline_status = self.get_pipeline_status(ticket_id)
-        pipeline_status.pipeline_input_files.append(clean_file_name)
+        if pipeline_status.pipeline_input_file_names is None:
+            # ToDo: why is this nessesary? Why is default_factory not creating an empty list here?
+            pipeline_status.pipeline_input_file_names = []
+
+        pipeline_status.pipeline_input_file_names.append(clean_file_name)
         self.set_pipeline_status(pipeline_status)
         return pipeline_status
 
     def set_pipeline_run_as_queud(
         self, ticket_id: uuid.UUID, analysis_method_name: str
-    ) -> PipelineRunStatus:
+    ) -> MetaKeggPipelineDef:
         pipeline_status = self.get_pipeline_status(ticket_id)
         pipeline_status.state = "queued"
         pipeline_status.pipeline_analyses_method = next(
-            [
-                e.value
-                for e in MetaKeggPipelineAnalysisMethods
-                if e.name == analysis_method_name
-            ]
+            e.value
+            for e in MetaKeggPipelineAnalysisMethods
+            if e.name == analysis_method_name
         )
         self.set_pipeline_status(pipeline_status)
-        self.redis.lpush(self.REDIS_NAME_PIPELINE_QUEUE, ticket_id)
-        return pipeline_status
-
-    def get_next_pipeline_run_from_queue(
-        self, set_status_running: bool = True
-    ) -> PipelineRunStatus | None:
-        raw_ticket_id = self.redis.rpop(self.REDIS_NAME_PIPELINE_QUEUE)
-        if raw_ticket_id is None:
-            return None
-        next_ticket_id = uuid.UUID(raw_ticket_id)
-        pipeline_status = self.get_pipeline_status(next_ticket_id)
-        if set_status_running:
-            pipeline_status.state = "running"
-            self.set_pipeline_status(pipeline_status)
+        self.redis_client.lpush(self.REDIS_NAME_PIPELINE_QUEUE, ticket_id.hex)
         return pipeline_status
 
     def set_pipeline_state_as_running(
         self,
         ticket_id: uuid.UUID,
-    ) -> PipelineRunStatus:
+    ) -> MetaKeggPipelineDef:
         pipeline_status = self.get_pipeline_status(ticket_id)
         pipeline_status.state = "running"
+        pipeline_status.started_at_utc = datetime.datetime.now(tz=datetime.timezone.utc)
         self.set_pipeline_status(pipeline_status)
         return pipeline_status
 
     def set_pipeline_state_as_finished(
         self, ticket_id: uuid.UUID, error_msg: str = None, result_file_path: Path = None
-    ) -> PipelineRunStatus:
+    ) -> MetaKeggPipelineDef:
         pipeline_status = self.get_pipeline_status(ticket_id)
         pipeline_status.state = "failed" if error_msg is not None else "success"
         if error_msg:
             pipeline_status.error = error_msg
         else:
             pipeline_status.result_path = result_file_path
+        pipeline_status.finished_at_utc = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        )
         self.set_pipeline_status(pipeline_status)
         return pipeline_status
 
-    def clean_pipeline_run(self, ticket_id: uuid.UUID) -> PipelineRunStatus:
+    def clean_pipeline_run(self, ticket_id: uuid.UUID) -> MetaKeggPipelineDef:
         pipeline_status = self.get_pipeline_status(ticket_id)
-        shutil.rmtree(PurePath(self.file_storage_base_dir, ticket_id.hex))
+        shutil.rmtree(PurePath(self.input_file_storage_base_dir, ticket_id.hex))
         pipeline_status.state = "expired"
         self.set_pipeline_status(pipeline_status)
         return pipeline_status
 
     def delete_pipeline_status(self, ticket_id: uuid.UUID):
-        self.redis.hdel(self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex)
+        self.redis_client.hdel(self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex)
+
+    def get_next_pipeline_run_from_queue(
+        self, set_status_running: bool = True
+    ) -> MetaKeggPipelineDef | None:
+        raw_ticket_id = self.redis_client.rpop(self.REDIS_NAME_PIPELINE_QUEUE)
+        print("")
+        print("raw_ticket_id", raw_ticket_id)
+        print("")
+        if raw_ticket_id is None:
+            return None
+        next_ticket_id = uuid.UUID(raw_ticket_id)
+        pipeline_status = self.get_pipeline_status(next_ticket_id)
+        if set_status_running:
+            pipeline_status.state = "running"
+            pipeline_status.started_at_utc = datetime.datetime.now(
+                tz=datetime.timezone.utc
+            )
+            self.set_pipeline_status(pipeline_status)
+        return pipeline_status
+
+    def get_next_pipeline_that_is_expired(
+        self, set_status_expired: bool = True
+    ) -> MetaKeggPipelineDef | None:
+        all_pipeline_states_json_raw: Dict[str, str] = self.redis_client.hgetall(
+            self.REDIS_NAME_PIPELINE_STATES
+        )
+        for uuid_hex, pipeline_state_json_raw in all_pipeline_states_json_raw.items():
+            pipeline_status = MetaKeggPipelineDef.model_validate_json(
+                pipeline_state_json_raw
+            )
+            if self.is_pipeline_run_expired(pipeline_status):
+                if set_status_expired:
+                    pipeline_status.state = "expired"
+                    self.set_pipeline_status(pipeline_status)
+                return pipeline_status
+        return None
+
+    def get_next_pipeline_that_is_deletable(self) -> MetaKeggPipelineDef | None:
+        all_pipeline_states_json_raw: Dict[str, str] = self.redis_client.hgetall(
+            self.REDIS_NAME_PIPELINE_STATES
+        )
+        for uuid_hex, pipeline_state_json_raw in all_pipeline_states_json_raw.items():
+            pipeline_status = MetaKeggPipelineDef.model_validate_json(
+                pipeline_state_json_raw
+            )
+            if self.is_pipeline_run_deletable(pipeline_status):
+                return pipeline_status
+        return None
+
+    def get_next_pipeline_that_is_abandoned(
+        self,
+    ) -> MetaKeggPipelineDef | None:
+        all_pipeline_states_json_raw: Dict[str, str] = self.redis_client.hgetall(
+            self.REDIS_NAME_PIPELINE_STATES
+        )
+        for uuid_hex, pipeline_state_json_raw in all_pipeline_states_json_raw.items():
+            pipeline_status = MetaKeggPipelineDef.model_validate_json(
+                pipeline_state_json_raw
+            )
+            if self.is_pipeline_run_definition_abandoned(pipeline_status):
+                return pipeline_status
+        return None
+
+    def is_pipeline_run_expired(self, pipeline_status: MetaKeggPipelineDef):
+        if pipeline_status.finished_at_utc is None:
+            # only finished pipeline run can expire.
+            return False
+        expire_datetime = pipeline_status.finished_at_utc + datetime.timedelta(
+            minutes=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN
+        )
+        if expire_datetime < datetime.datetime.now(tz=datetime.timezone.utc):
+            return True
+        return False
+
+    def is_pipeline_run_deletable(self, pipeline_status: MetaKeggPipelineDef):
+        if pipeline_status.finished_at_utc is None:
+            # only finished pipeline run can expire.
+            return False
+        expire_datetime = pipeline_status.finished_at_utc + datetime.timedelta(
+            minutes=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN
+        )
+        deleteable_datetime = expire_datetime + datetime.timedelta(
+            minutes=config.PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER
+        )
+        if deleteable_datetime < datetime.datetime.now(tz=datetime.timezone.utc):
+            return True
+        return False
+
+    def is_pipeline_run_definition_abandoned(
+        self, pipeline_status: MetaKeggPipelineDef
+    ):
+        if pipeline_status.state != "initialized":
+            # only pipeline runs with state initialized can be "abandoned".
+            return False
+        abandoned_datetime = pipeline_status.created_at_utc + datetime.timedelta(
+            minutes=config.PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER
+        )
+        if abandoned_datetime < datetime.datetime.now(tz=datetime.timezone.utc):
+            return True
+        return False

@@ -86,10 +86,12 @@ def check_redis_server_running(redis_client: redis.Redis) -> bool:
         return False
 
 
-def get_redis_client() -> redis.Redis:
+def get_redis_client(never_start_fakeredis: bool = False) -> redis.Redis:
     if config.REDIS_CONNECTION_PARAMS is None:
         client = redis.Redis(host=LOCAL_FAKEREDIS_HOSTNAME, port=LOCAL_FAKEREDIS_PORT)
         if check_redis_server_running(redis_client=client):
+            return client
+        if never_start_fakeredis:
             return client
         # this is our first call and there is no redis server running. Lets start a fakeredisserver...
         log.warning(

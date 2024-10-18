@@ -16,21 +16,24 @@ from fastapi import (
 from slowapi import Limiter
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-
+from multiprocessing import Process
 
 from mekeweserver.config import Config
 from mekeweserver.db import get_redis_client
-from mekeweserver.pipeline_status_clerk import PipelineStatusClerk
+from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 
 config = Config()
 
 
 from mekeweserver.model import (
     MetaKeggPipelineInputParams,
-    PipelineRunTicket,
-    PipelineRunStatus,
+    MetaKeggPipelineInputParamsUpdate,
+    MetaKeggPipelineTicket,
+    MetaKeggPipelineDef,
     MetaKeggPipelineAnalysisMethods,
     MetaKeggPipelineAnalysisMethod,
+    MetaKeggWebServerHealthState,
+    MetaKeggWebServerModuleHealthState,
 )
 
 
@@ -98,7 +101,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     ##ENDPOINT: /pipeline
     @mekewe_router.post(
         "/pipeline",
-        response_model=PipelineRunTicket,
+        response_model=MetaKeggPipelineTicket,
         description="Define a new meta Kegg pipeline run. The pipeline-run will not start immediatily but be queued. The response of this endpoint will be a ticket that can be used to track the status of your pipeline run.",
         tags=["Pipeline"],
     )
@@ -106,28 +109,29 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def initialize_a_metakegg_pipeline_run_definition(
         request: Request,
         pipeline_params: Annotated[MetaKeggPipelineInputParams, Query()] = None,
-    ) -> PipelineRunTicket:
-        ticket: PipelineRunTicket = PipelineStatusClerk(
-            redis=redis
+    ) -> MetaKeggPipelineTicket:
+        ticket: MetaKeggPipelineTicket = MetaKeggPipelineStateManager(
+            redis_client=redis
         ).init_new_pipeline_run(pipeline_params)
         return ticket
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}
-    @mekewe_router.post(
+    @mekewe_router.patch(
         "/pipeline/{pipeline_ticket_id}",
-        response_model=PipelineRunStatus,
+        response_model=MetaKeggPipelineDef,
         description="Update the pipeline params of an allready existing pipeline run definition. The pipeline must not be started via `/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}` allready.",
         tags=["Pipeline"],
     )
     @limiter.limit(f"10/minute")
     async def update_a_metakegg_pipeline_run_definition(
         request: Request,
-        pipeline_params: Annotated[MetaKeggPipelineInputParams, Query()] = None,
-    ) -> PipelineRunStatus:
-        pipeline_status: PipelineRunStatus = PipelineStatusClerk(
-            redis=redis
+        pipeline_ticket_id: uuid.UUID,
+        pipeline_params: Annotated[MetaKeggPipelineInputParamsUpdate, Query()] = None,
+    ) -> MetaKeggPipelineDef:
+        pipeline_status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
+            redis_client=redis
         ).get_pipeline_status(
-            pipeline_params,
+            pipeline_ticket_id,
             raise_exception_if_not_exists=pipelinerun_not_found_exception,
         )
         if pipeline_status.state != "initialized":
@@ -135,9 +139,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Pipeline is not in an updatable state anymore",
             )
-        for key, val in pipeline_params.model_dump(exclude_unset=True):
+        for key, val in pipeline_params.model_dump(exclude_unset=True).items():
             setattr(pipeline_status.pipeline_params, key, val)
-        PipelineStatusClerk(redis=redis).set_pipeline_status(
+        MetaKeggPipelineStateManager(redis_client=redis).set_pipeline_status(
             pipeline_status,
         )
         return pipeline_status
@@ -145,7 +149,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/upload
     @mekewe_router.post(
         "/pipeline/{pipeline_ticket_id}/upload",
-        response_model=PipelineRunStatus,
+        response_model=MetaKeggPipelineDef,
         description="Add a file to an non started/queued pipeline-run definition",
         tags=["Pipeline"],
     )
@@ -154,8 +158,8 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         pipeline_ticket_id: uuid.UUID,
         file: UploadFile = File(...),
-    ) -> PipelineRunStatus:
-        return PipelineStatusClerk(redis=redis).attach_input_file(
+    ) -> MetaKeggPipelineDef:
+        return MetaKeggPipelineStateManager(redis_client=redis).attach_input_file(
             pipeline_ticket_id, file
         )
 
@@ -164,9 +168,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
     ]
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/run/{analysis_method_name}
-    @mekewe_router.get(
+    @mekewe_router.post(
         "/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}",
-        response_model=PipelineRunStatus,
+        response_model=MetaKeggPipelineDef,
         responses=http_exception_to_resp_desc(pipelinerun_not_found_exception),
         description="Check the status of a triggered pipeline run.",
         tags=["Pipeline"],
@@ -176,15 +180,17 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         pipeline_ticket_id: uuid.UUID,
         analysis_method_name: analysis_method_names_type_hint,
-    ) -> PipelineRunStatus:
-        return PipelineStatusClerk(redis=redis).set_pipeline_run_as_queud(
+    ) -> MetaKeggPipelineDef:
+        return MetaKeggPipelineStateManager(
+            redis_client=redis
+        ).set_pipeline_run_as_queud(
             pipeline_ticket_id, analysis_method_name=analysis_method_name
         )
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/status
     @mekewe_router.get(
         "/pipeline/{pipeline_ticket_id}/status",
-        response_model=PipelineRunStatus,
+        response_model=MetaKeggPipelineDef,
         responses=http_exception_to_resp_desc(pipelinerun_not_found_exception),
         description="Check the status of a triggered pipeline run.",
         tags=["Pipeline"],
@@ -194,8 +200,8 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         pipeline_ticket_id: uuid.UUID,
     ):
-        status: PipelineRunStatus = PipelineStatusClerk(
-            redis=redis
+        status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
+            redis_client=redis
         ).get_pipeline_status(pipeline_ticket_id)
         return status
 
@@ -212,8 +218,8 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         pipeline_ticket_id: uuid.UUID,
     ):
-        status: PipelineRunStatus | None = PipelineStatusClerk(
-            redis=redis
+        status: MetaKeggPipelineDef | None = MetaKeggPipelineStateManager(
+            redis_client=redis
         ).get_pipeline_status(pipeline_ticket_id)
         if status is None:
             raise pipelinerun_not_found_exception
@@ -243,3 +249,41 @@ def get_client_router(app: FastAPI) -> APIRouter:
         return FileResponse(file)
 
     return mekeweclient_router
+
+
+def get_health_router(app: FastAPI, background_worker_process: Process) -> APIRouter:
+    mekeweclient_health_router: APIRouter = APIRouter()
+    redis = get_redis_client()
+    limiter: Limiter = app.state.limiter
+
+    @mekeweclient_health_router.get(
+        "/health",
+        response_model=MetaKeggWebServerHealthState,
+        description="Check if server is running normal",
+        tags=["Health"],
+    )
+    @limiter.limit(f"30/minute")
+    async def get_health_state(
+        request: Request,
+    ) -> MetaKeggWebServerHealthState:
+        overall_state = MetaKeggWebServerHealthState(healthy=True, dependencies=[])
+
+        background_worker_state = MetaKeggWebServerModuleHealthState(
+            name="worker", healthy=background_worker_process.is_alive()
+        )
+        if background_worker_state.healthy == False:
+            overall_state.healthy = False
+        overall_state.dependencies.append(background_worker_state)
+
+        cache_server_state = MetaKeggWebServerModuleHealthState(
+            name="cache", healthy=False
+        )
+        try:
+            redis.ping()
+            cache_server_state.healthy = True
+        except:
+            overall_state.healthy = False
+        overall_state.dependencies.append(cache_server_state)
+        return overall_state
+
+    return mekeweclient_health_router

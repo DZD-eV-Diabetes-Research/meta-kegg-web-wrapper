@@ -8,6 +8,7 @@ from uvicorn.config import LOGGING_CONFIG
 from fastapi.openapi.utils import get_openapi
 from pathlib import Path, PurePath
 import sys, os
+import atexit
 
 # Add meta kegg server to global Python modules.
 # This way we address mekeweserver as a module for imports without the need of installing it first.
@@ -72,6 +73,21 @@ def run_server():
         f"allow_origins=[{config.CLIENT_URL}, {str(config.get_server_url()).rstrip('/')}]"
     )
 
+    from mekeweserver.db import get_redis_client
+
+    log.info("Check Cache/DB Health...")
+
+    r = get_redis_client()
+    r.ping()
+    log.info("...connection to Cache/DB Health successful.")
+
+    from mekeweserver.pipeline_worker.pipeline_worker import PipelineWorker
+
+    log.info("Start background MetaKegg Pipeline Processor worker...")
+    worker_process = PipelineWorker()
+    atexit.register(worker_process.stop_event.set)
+    worker_process.start()
+
     # check if client exists if needed
     if config.CLIENT_URL == config.get_server_url():
         if (
@@ -84,7 +100,7 @@ def run_server():
 
     from mekeweserver.fastapi_app import get_fastapi_app
 
-    app = get_fastapi_app()
+    app = get_fastapi_app(worker_process)
     uvicorn_log_config: Dict = LOGGING_CONFIG
     uvicorn_log_config["loggers"][APP_LOGGER_DEFAULT_NAME] = {
         "handlers": ["default"],

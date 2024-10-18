@@ -3,6 +3,7 @@ import getversion
 from fastapi import Depends
 from fastapi import FastAPI
 import getversion.plugin_setuptools_scm
+from multiprocessing import Process
 
 # from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,9 +36,14 @@ def _add_api_middleware(app: FastAPI):
     # )
 
 
-def _add_app_routers(app: FastAPI):
-    from mekeweserver.fastapi_routes import get_api_router, get_client_router
+def _add_app_routers(app: FastAPI, background_worker: Process):
+    from mekeweserver.fastapi_routes import (
+        get_api_router,
+        get_client_router,
+        get_health_router,
+    )
 
+    app.include_router(get_health_router(app, background_worker))
     app.include_router(get_api_router(app))
     app.include_router(get_client_router(app))
 
@@ -48,7 +54,7 @@ def _add_rate_limiter(app: FastAPI):
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-def get_fastapi_app() -> FastAPI:
+def get_fastapi_app(background_worker: Process) -> FastAPI:
     app = FastAPI(
         title="MetaKegg Web REST API",
         version=getversion.get_module_version(mekeweserver)[0],
@@ -58,5 +64,5 @@ def get_fastapi_app() -> FastAPI:
 
     _add_api_middleware(app)
     _add_rate_limiter(app)
-    _add_app_routers(app)
+    _add_app_routers(app, background_worker)
     return app

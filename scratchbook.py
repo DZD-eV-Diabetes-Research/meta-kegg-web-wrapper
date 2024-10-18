@@ -50,4 +50,136 @@ def enum_test():
     print([e.value for e in MetaKeggPipelineAnalysisMethods])
 
 
-enum_test()
+def add_min_to_datetime():
+    import datetime
+
+    now = datetime.datetime.now()
+    minutes_to_add = 240
+    print(now)
+    future = now + datetime.timedelta(minutes=minutes_to_add)
+    print(future)
+
+
+def capture_prints():
+    from io import StringIO
+    import sys
+    import time
+
+    def this_is_a_test():
+        print("I start")
+        time.sleep(1)
+        print("I worked")
+
+    class Capturing(list):
+        def __enter__(self):
+            self._stdout = sys.stdout
+            sys.stdout = self._stringio = StringIO()
+            return self
+
+        def __exit__(self, *args):
+            self.extend(self._stringio.getvalue().splitlines())
+            del self._stringio  # free up some memory
+            sys.stdout = self._stdout
+
+    with Capturing() as output:
+        this_is_a_test()
+
+    print("displays on screen")
+
+    with Capturing(output) as output:  # note the constructor argument
+        print("hello world2")
+
+    print("done")
+    print("output:", output)
+
+
+def capture_prints_asynco():
+    from io import StringIO
+    import sys
+    import time
+    import asyncio
+
+    async def this_is_a_test():
+        print("I start")
+        time.sleep(1)
+        print("I worked")
+        time.sleep(1)
+        print("I am done")
+
+    class Capturing(list):
+        def __enter__(self):
+            self._stdout = sys.stdout
+            sys.stdout = self._stringio = StringIO()
+            return self
+
+        def __exit__(self, *args):
+            self.extend(self._stringio.getvalue().splitlines())
+            del self._stringio  # free up some memory
+            sys.stdout = self._stdout
+
+    l = asyncio.get_event_loop()
+    with Capturing() as output:
+        l.run_until_complete(this_is_a_test())
+
+    print("displays on screen")
+
+    with Capturing(output) as output:  # note the constructor argument
+        print("hello world2")
+
+    print("done")
+    print("output:", output)
+
+
+def capture_real_time():
+    import sys
+    import time
+    import logging
+    from io import TextIOBase
+    from typing import Callable
+
+    def get_logger() -> logging.Logger:
+        log = logging.getLogger()
+        log.setLevel("INFO")
+        log.addHandler(logging.StreamHandler(sys.stdout))
+        return log
+
+    def this_is_a_test():
+        print("I start")
+        time.sleep(1)
+        print("I worked")
+        time.sleep(1)
+        print("I am done")
+
+    class RealTimeOutputCapture:
+
+        def __init__(self, output_handler: Callable[[str, TextIOBase], None]):
+            self.output_handler = output_handler
+            self.original_stdout = sys.stdout  # Save original stdout
+            self.buffer = ""  # Buffer to store partial output
+
+        def __enter__(self):
+            sys.stdout = self  # Redirect stdout to this instance
+            return self
+
+        def write(self, message):
+            # Buffer the output until we hit a newline
+            self.buffer += message
+            if "\n" in self.buffer:
+                # Split by newlines and handle each complete line
+                lines = self.buffer.splitlines(keepends=True)
+                for line in lines:
+                    if line.endswith("\n"):
+                        self.output_handler(line.strip(), self.original_stdout)
+                self.buffer = ""
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            sys.stdout = self.original_stdout  # Restore original stdout
+
+    def handler(m: str, original_logger: TextIOBase):
+        original_logger.write(f"PREFIX ALL THE THINGS {m}\n")
+
+    with RealTimeOutputCapture(handler) as cap:
+        this_is_a_test()
+
+
+capture_real_time()
