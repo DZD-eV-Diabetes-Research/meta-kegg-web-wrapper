@@ -17,6 +17,7 @@ from mekeweserver.pipeline_worker.pipeline_output_catcher import (
     OutputCatcher,
     get_pipeline_output_handler,
 )
+from mekeweserver.log import get_logger
 
 
 class MetakeggPipelineProcessor:
@@ -41,7 +42,15 @@ class MetakeggPipelineProcessor:
                 ),
                 **self.pipeline_definition.pipeline_params.model_dump(),
             )
-            method: MetaKeggPipelineAnalysisMethod = self.pipeline_definition
+            method: MetaKeggPipelineAnalysisMethod = (
+                self.pipeline_definition.pipeline_analyses_method
+            )
+
+            # hotfix: metakegg wont eat a single item list as "single input" :/
+            if len(self.pipeline.input_file_path) == 1:
+                self.pipeline.input_file_path = self.pipeline.input_file_path[0]
+
+            # get_logger().info(("method:", method, method, str(method)))
             analysis_method_func: Callable[[], Awaitable[str]] = getattr(
                 self.pipeline, method.name
             )
@@ -50,7 +59,8 @@ class MetakeggPipelineProcessor:
             # The OutputCatcher (with our handler) writes any printed output of the metakegg pipeline run into our redis database. this way we can keep the user up2date what happening.
             with OutputCatcher(
                 output_handler=get_pipeline_output_handler(
-                    self.pipeline_definition.ticket.id, self.redis_client
+                    self.pipeline_definition.ticket.id,
+                    self.pipeline_state_manager.redis_client,
                 )
             ):
                 event_loop.run_until_complete(analysis_method_func())

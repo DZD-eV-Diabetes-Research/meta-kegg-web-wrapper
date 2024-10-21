@@ -18,13 +18,14 @@ if __name__ == "__main__":
     MODULE_PARENT_DIR = MODULE_DIR.parent.absolute()
     sys.path.insert(0, os.path.normpath(MODULE_PARENT_DIR))
 
-from mekeweserver.config import Config
-from mekeweserver.log import get_logger
 
-config = Config()
+from mekeweserver.log import get_logger
 
 
 def dump_open_api_spec(app: FastAPI):
+    from mekeweserver.config import Config
+
+    config = Config()
     if config.DUMP_OPEN_API_SPECS_ON_BOOT:
         path = Path(f"{Path(__file__).parent}/../../openapi.json")
         if config.DUMP_OPEN_API_SPECS_ON_BOOT_DIR is not None:
@@ -49,7 +50,12 @@ def dump_open_api_spec(app: FastAPI):
             )
 
 
-def run_server():
+def run_server(env: Dict = None):
+    if env:
+        os.environ = os.environ.copy() | env
+    from mekeweserver.config import Config
+
+    config = Config()
     import getversion
     import mekeweserver
 
@@ -62,6 +68,11 @@ def run_server():
 
     log = get_logger()
     log.info(f"Start MetaKEGG Web API Server version '{mekewe_server_version}'")
+    from mekeweserver.config import env_file_path
+
+    log.info(
+        f"Load env variables from file '{Path(env_file_path).resolve()}' (if exists)"
+    )
     log.debug("----CONFIG-----")
     log.debug(yaml.dump(json.loads(config.model_dump_json()), sort_keys=False))
     log.debug("----CONFIG-END-----")
@@ -72,6 +83,15 @@ def run_server():
     print(
         f"allow_origins=[{config.CLIENT_URL}, {str(config.get_server_url()).rstrip('/')}]"
     )
+    # check if client exists if needed
+    if config.CLIENT_URL == config.get_server_url():
+        if (
+            not Path(config.FRONTEND_FILES_DIR).exists()
+            or not Path(config.FRONTEND_FILES_DIR, "index.html").exists()
+        ):
+            raise ValueError(
+                "Can not find frontend files. Maybe you need to build the frontend first. Try to run 'make frontend' or point config var `CLIENT_URL` to an alternative URL."
+            )
 
     from mekeweserver.db import get_redis_client
 
@@ -84,19 +104,9 @@ def run_server():
     from mekeweserver.pipeline_worker.pipeline_worker import PipelineWorker
 
     log.info("Start background MetaKegg Pipeline Processor worker...")
-    worker_process = PipelineWorker()
+    worker_process = PipelineWorker(env=env)
     atexit.register(worker_process.stop_event.set)
     worker_process.start()
-
-    # check if client exists if needed
-    if config.CLIENT_URL == config.get_server_url():
-        if (
-            not Path(config.FRONTEND_FILES_DIR).exists()
-            or not Path(config.FRONTEND_FILES_DIR, "index.html").exists()
-        ):
-            raise ValueError(
-                "Can not find frontend files. Maybe you need to build the frontend first. Try to run 'make frontend'"
-            )
 
     from mekeweserver.fastapi_app import get_fastapi_app
 

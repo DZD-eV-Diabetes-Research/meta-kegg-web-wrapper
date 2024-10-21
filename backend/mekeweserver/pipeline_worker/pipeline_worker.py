@@ -1,12 +1,15 @@
-from typing import List
+from typing import List, Dict
 from multiprocessing import Process, Event
 import shutil
+import traceback
+import os
 
 # from metaKEGG import Pipeline
 # from mekeweserver.model import PipelineInputParams
 import time
 
 import redis
+
 from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 from mekeweserver.db import get_redis_client
 
@@ -19,26 +22,50 @@ log = get_logger()
 
 
 class PipelineWorker(Process):
+    WORKER_EXCEPTION_COUNTER_REDIS_KEY = "METAKEGG_WORKER_EXCEPTION_COUNT"
+
     # constructor
-    def __init__(self, tick_pause_sec: int = 1):
+    def __init__(self, tick_pause_sec: int = 1, env: Dict = None):
         # call the parent constructor
         Process.__init__(self)
         # create and store an event
         self.stop_event = Event()
         self.tick_pause_sec = tick_pause_sec
+        self.env = env
 
     def run(self):
+        if self.env:
+            os.environ = os.environ.copy() | self.env
         log.info("Started MetaKegg Pipeline Processing Worker")
         redis_client = get_redis_client(never_start_fakeredis=True)
+        redis_client.set(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 0)
 
         while not self.stop_event.is_set():
-            pipeline_state_manager = MetaKeggPipelineStateManager(
-                redis_client=redis_client
-            )
-            self._process_next_pipeline_in_queue(pipeline_state_manager)
-            self._process_next_expiring_pipeline(pipeline_state_manager)
-            self._process_next_deletable_pipeline(pipeline_state_manager)
-            self._process_next_abandoned_pipeline_def(pipeline_state_manager)
+            try:
+                pipeline_state_manager = MetaKeggPipelineStateManager(
+                    redis_client=redis_client
+                )
+                self._process_next_pipeline_in_queue(pipeline_state_manager)
+                self._process_next_expiring_pipeline(pipeline_state_manager)
+                self._process_next_deletable_pipeline(pipeline_state_manager)
+                self._process_next_abandoned_pipeline_def(pipeline_state_manager)
+            except Exception as e:
+                try:
+                    exception_count = int(
+                        redis_client.get(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 0)
+                    )
+                except redis.ConnectionError:
+                    exception_count = 99999
+                if (
+                    exception_count
+                    < config.RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES
+                ):
+                    log.error(e, exc_info=True)
+                    redis_client.incr(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 1)
+                else:
+                    raise e
+                # traceback.format_exception(e)
+            redis_client.set(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 0)
             time.sleep(self.tick_pause_sec)
         log.info("Exiting MetaKegg Pipeline Processing Worker.")
 

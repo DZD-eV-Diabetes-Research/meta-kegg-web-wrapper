@@ -1,7 +1,7 @@
 from typing import List, Dict
 import json
 from pathlib import Path, PurePath
-
+import time
 import requests
 from utils import (
     req,
@@ -78,6 +78,22 @@ def test_single_input_gene_pipeline_run():
         required_keys_and_val={"state": "queued"},
         exception_dict_identifier="GET-'/api/pipeline/{pipeline_ticket_id}/status'-response",
     )
+    timeout_end = time.time() + 60
+    pipeline_running = True
+    while pipeline_running and timeout_end > time.time():
+        res = req(
+            f"/api/pipeline/{pipeline_ticket_id}/status",
+        )
+        print("res", res)
+        if res["state"] == "failed":
+            print("")
+            print(
+                f"ERROR: Pipeline-run with id '{pipeline_ticket_id}'. Traceback:\n{res['error_traceback']}"
+            )
+            exit(1)
+        elif res["state"] == "success":
+            pipeline_running = False
+        time.sleep(1)
 
 
 def run_all_tests_pipeline_run():

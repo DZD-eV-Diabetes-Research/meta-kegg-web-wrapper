@@ -14,8 +14,10 @@ from mekeweserver.model import (
     MetaKeggPipelineAnalysisMethods,
 )
 from mekeweserver.config import Config
+from mekeweserver.log import get_logger
 
 config = Config()
+log = get_logger()
 
 
 class MetaKeggPipelineStateManager:
@@ -91,6 +93,7 @@ class MetaKeggPipelineStateManager:
     def set_pipeline_run_as_queud(
         self, ticket_id: uuid.UUID, analysis_method_name: str
     ) -> MetaKeggPipelineDef:
+        log.info(f"Add pipeline-run with id '{ticket_id}' to queue.")
         pipeline_status = self.get_pipeline_status(ticket_id)
         pipeline_status.state = "queued"
         pipeline_status.pipeline_analyses_method = next(
@@ -129,7 +132,7 @@ class MetaKeggPipelineStateManager:
 
     def clean_pipeline_run(self, ticket_id: uuid.UUID) -> MetaKeggPipelineDef:
         pipeline_status = self.get_pipeline_status(ticket_id)
-        shutil.rmtree(PurePath(self.input_file_storage_base_dir, ticket_id.hex))
+        shutil.rmtree(pipeline_status.get_files_base_dir())
         pipeline_status.state = "expired"
         self.set_pipeline_status(pipeline_status)
         return pipeline_status
@@ -140,14 +143,17 @@ class MetaKeggPipelineStateManager:
     def get_next_pipeline_run_from_queue(
         self, set_status_running: bool = True
     ) -> MetaKeggPipelineDef | None:
-        raw_ticket_id = self.redis_client.rpop(self.REDIS_NAME_PIPELINE_QUEUE)
-        print("")
-        print("raw_ticket_id", raw_ticket_id)
-        print(
-            "TODO: FIX THIS. Failes in test and shows that backgroudn worker is not terminated properly"
-        )
+        raw_ticket_id: bytes = self.redis_client.rpop(self.REDIS_NAME_PIPELINE_QUEUE)
         if raw_ticket_id is None:
             return None
+        raw_ticket_id = raw_ticket_id.decode("utf-8")
+        # print(
+        #    "TODO: FIX THIS. Failes in test and shows that backgroudn worker is not terminated properly"
+        # ) # update: can not reproduce failed termination of background worker. keep eye on.
+
+        log.info(
+            f"Pick up next pipeline-run with id '{raw_ticket_id}' from queue to be processed..."
+        )
         next_ticket_id = uuid.UUID(raw_ticket_id)
         pipeline_status = self.get_pipeline_status(next_ticket_id)
         if set_status_running:

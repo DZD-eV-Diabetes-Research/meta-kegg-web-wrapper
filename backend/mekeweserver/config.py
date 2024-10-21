@@ -95,7 +95,7 @@ class Config(BaseSettings):
         description="If a pipeline has finished and is expired, all its metadata will be wiped after this amounts of minutes after expiring. If a user tries to revisit it, there will be a 404 error.",
     )
 
-    def get_server_url(self) -> AnyHttpUrl:
+    def get_server_url(self) -> str:
         proto: Literal["https", "http"] = "http"
         if self.SERVER_PROTOCOL is not None:
             proto = self.SERVER_PROTOCOL
@@ -105,7 +105,7 @@ class Config(BaseSettings):
         port = ""
         if self.SERVER_LISTENING_PORT not in [80, 443]:
             port = f":{self.SERVER_LISTENING_PORT}"
-        return AnyHttpUrl(f"{proto}://{self.SERVER_HOSTNAME}{port}")
+        return f"{proto}://{self.SERVER_HOSTNAME}{port}"
 
     ENABLE_RATE_LIMITING: bool = Field(
         default=True,
@@ -134,6 +134,9 @@ class Config(BaseSettings):
     DUMP_OPEN_API_SPECS_ON_BOOT_DIR: Optional[str] = Field(
         default=None,
         description="If not None and DUMP_OPEN_API_SPECS_ON_BOOT set to true, the server will dump a openapi.json file in this directory on boot.",
+    )
+    RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES: int = Field(
+        default=3, description=""
     )
 
     class Config:
