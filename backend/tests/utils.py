@@ -1,6 +1,6 @@
 from typing import Dict, List, Literal, Tuple
 from io import BufferedReader
-
+from pathlib import Path
 import os
 import requests
 import json
@@ -33,7 +33,8 @@ def req(
     expected_http_code: int = None,
     tolerated_error_codes: List[int] = None,
     tolerated_error_body: List[Dict | str] = None,
-) -> Dict | str:
+    return_response_obj: bool = False,
+) -> Dict | str | requests.Response:
     if tolerated_error_codes is None:
         tolerated_error_codes = []
     if tolerated_error_body is None:
@@ -87,13 +88,17 @@ def req(
                     if body:
                         print("Error body: ", body)
                     raise err
+    if return_response_obj:
+        return r
     try:
         return r.json()
     except requests.exceptions.JSONDecodeError:
         return r.content
 
 
-def get_dot_env_file_variable(filepath: str, key: str) -> str | None:
+def get_dot_env_file_variable(
+    filepath: str, key: str, missing_ok: bool = True
+) -> str | None:
     """
     Extracts the value of a specific environment variable from a .env file.
 
@@ -105,7 +110,11 @@ def get_dot_env_file_variable(filepath: str, key: str) -> str | None:
         str | None: The value of the environment variable, or None if it's not found or empty.
     """
     if not os.path.exists(filepath):
-        return None
+        if missing_ok:
+            return None
+        raise FileNotFoundError(
+            f"Could not find env file at {Path(filepath).resolve()}"
+        )
 
     with open(filepath) as file:
         for line in file:
@@ -114,7 +123,11 @@ def get_dot_env_file_variable(filepath: str, key: str) -> str | None:
                 var_key, var_value = map(str.strip, line.split("=", 1))
                 if var_key == key:
                     return var_value or None
-    return None
+    if missing_ok:
+        return None
+    raise ValueError(
+        f"Could not find '{key}' in env file at {Path(filepath).resolve()}"
+    )
 
 
 def dict_must_contain(
@@ -149,6 +162,8 @@ def dict_must_contain(
     for k in required_keys:
         if k not in d:
             if raise_if_not_fullfilled:
+                print("")
+                print("DATA:\n", d)
                 raise KeyError(
                     f"""Missing expected value key '{k}' {"in dict "+exception_dict_identifier if exception_dict_identifier else ""}'"""
                 )

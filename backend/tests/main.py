@@ -4,7 +4,8 @@ import time
 import urllib3
 import os
 import traceback
-
+from pathlib import Path, PurePath
+import shutil
 
 if __name__ == "__main__":
     from pathlib import Path
@@ -22,6 +23,13 @@ os.environ["MEKEWESERVER_DOT_ENV_FILE"] = DOT_ENV_FILE_PATH
 
 from utils import get_mekeweserver_base_url, get_dot_env_file_variable
 
+test_data_base_path = Path(
+    get_dot_env_file_variable(
+        "backend/tests/.env", "PIPELINE_RUNS_CACHE_DIR", missing_ok=False
+    )
+)
+if test_data_base_path.exists():
+    shutil.rmtree(test_data_base_path)
 
 from mekeweserver.main import run_server
 

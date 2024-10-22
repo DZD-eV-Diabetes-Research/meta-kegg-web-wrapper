@@ -247,10 +247,13 @@ class MetaKeggPipelineDef(BaseModel):
             return None
         return Path(
             PurePath(
-                self.get_files_base_dir(),
+                self.get_output_files_dir(),
                 self.pipeline_output_zip_file_name,
             )
         )
+
+    def generate_output_zip_file_name(self) -> str:
+        return f"output-metakegg-{self.pipeline_analyses_method.name}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip"
 
 
 class MetaKeggWebServerModuleHealthState(BaseModel):

@@ -49,7 +49,7 @@ def get_pipeline_output_handler(
         if pipeline_status.output_log is None:
             pipeline_status.output_log = ""
         pipeline_status.output_log += m
-        if config.LOG_LEVEL == "DEBUG":
+        if config.LOG_LEVEL == "INFO":
             # if we are in debug mode, print all the stuff from the metakegg pipeline. otherwise we save it only to the redis server, no redudance in non debug mode.
             original_logger.write(m)
         state_clerk.set_pipeline_status(pipeline_status)

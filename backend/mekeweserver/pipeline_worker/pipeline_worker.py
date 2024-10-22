@@ -52,7 +52,7 @@ class PipelineWorker(Process):
             except Exception as e:
                 try:
                     exception_count = int(
-                        redis_client.get(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 0)
+                        redis_client.get(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY)
                     )
                 except redis.ConnectionError:
                     exception_count = 99999

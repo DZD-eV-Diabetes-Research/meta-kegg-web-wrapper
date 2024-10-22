@@ -229,8 +229,11 @@ def get_api_router(app: FastAPI) -> APIRouter:
             raise pipelinerun_not_finished_exception
         elif status.state == "expired":
             raise pipelinerun_expired_exception
-
-        return FileResponse(status.result_path)
+        print("pipeline_output_zip_file_name", status.pipeline_output_zip_file_name)
+        return FileResponse(
+            status.get_output_zip_file_path(),
+            filename=status.get_output_zip_file_path().name,
+        )
 
     return mekewe_router
 

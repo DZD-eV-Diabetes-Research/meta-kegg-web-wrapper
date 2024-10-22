@@ -6,10 +6,9 @@ The server module for DZDMetaKeggWeb, a system to document the medical history o
 
 ###  Install req only
 
-`cd backend`
 
 `python -m pip install pip-tools -U`
 
-`python -m piptools compile -o requirements.txt pyproject.toml`
+`python -m piptools compile -o ./backend/requirements.txt ./backend/pyproject.toml`
 
-`pip install -r requirements.txt -U`
+`python -m pip install -r ./backend/requirements.txt -U`
