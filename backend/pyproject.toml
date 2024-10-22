@@ -15,9 +15,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
 ]
+
 dependencies = [
-    "metaKEGG @ git+ssh://github.com/dife-bioinformatics/metaKEGG#egg=metaKEGG",
-    "six",                                                                       # six seems to be needed if metaKEGG was installed from github. investigate later
+    "metaKEGG @ git+ssh://git@github.com/dife-bioinformatics/metaKEGG.git",
+    "six",                                                                  # six seems to be needed if metaKEGG was installed from github. investigate later
     "uvicorn",
     "fastapi",
     "pyyaml",

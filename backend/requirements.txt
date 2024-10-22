@@ -56,7 +56,7 @@ limits==3.13.0
     # via slowapi
 matplotlib==3.6.2
     # via metakegg
-metakegg @ git+ssh://github.com/dife-bioinformatics/metaKEGG
+metakegg @ git+ssh://git@github.com/dife-bioinformatics/metaKEGG.git
     # via mekeweserver (backend/pyproject.toml)
 numpy==1.26.0
     # via
