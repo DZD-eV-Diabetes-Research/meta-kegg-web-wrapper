@@ -16,7 +16,7 @@ this will install the reqs locally wihout installing the whole module
 `python -m pip install -r ./backend/requirements.txt -U`
 
 
-create a .env file at ``
+create a .env file at `backend/mekeweserver/.env`
 
 Write this content into the file `backend/mekeweserver/.env`
 
