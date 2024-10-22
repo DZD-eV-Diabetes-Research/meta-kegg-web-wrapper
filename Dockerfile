@@ -1,11 +1,11 @@
 #FRONTEND BUILD STAGE
 
-
-FROM oven/bun AS mekewe-frontend-build
-RUN mkdir /frontend_build
-WORKDIR /frontend_build
-COPY MeKeWe/frontend /frontend_build
-RUN bun install && bun run build && bunx nuxi generate
+# frontend not existent atm
+#FROM oven/bun AS mekewe-frontend-build
+#RUN mkdir /frontend_build
+#WORKDIR /frontend_build
+#COPY frontend /frontend_build
+#RUN bun install && bun run build && bunx nuxi generate
 
 # BACKEND BUILD AND RUN STAGE
 FROM python:3.11 AS mekewe-backend
@@ -20,7 +20,7 @@ RUN mkdir -p $BASEDIR/mekewefrontend
 RUN mkdir -p $BASEDIR/data
 
 # Copy frontend dist from pre stage
-COPY --from=mekewe-frontend-build /frontend_build/.output/public $BASEDIR/mekewefrontend
+# COPY --from=mekewe-frontend-build /frontend_build/.output/public $BASEDIR/mekewefrontend
 
 
 # Install Server
@@ -30,14 +30,14 @@ RUN python3 -m pip install --upgrade pip
 RUN pip install -U pip-tools
 
 # Generate requirements.txt based on depenencies defined in pyproject.toml
-COPY MeKeWe/backend/pyproject.toml $BASEDIR/mekeweserver/pyproject.toml
+COPY backend/pyproject.toml $BASEDIR/mekeweserver/pyproject.toml
 RUN pip-compile -o $BASEDIR/requirements.txt $BASEDIR/mekeweserver/pyproject.toml
 
 # Install requirements
 RUN pip install -U -r $BASEDIR/requirements.txt
 
 # install app
-COPY MeKeWe/backend/mekeweserver $BASEDIR/mekeweserver
+COPY backend/mekeweserver $BASEDIR/mekeweserver
 
 # copy .git folder to be able to generate version file
 COPY .git $BASEDIR/.git
@@ -51,5 +51,10 @@ WORKDIR $BASEDIR/mekeweserver
 ENV SERVER_LISTENING_HOST=0.0.0.0
 ENV SERVER_HOSTNAME=localhost
 ENV PIPELINE_RUNS_RESULT_CACHE_DIR=$BASEDIR/data
+
+#REMOV THIS WHEN FRONTEND EXISTEND
+ENV CLIENT_URL=http://localhost:3000
+
+
 ENTRYPOINT ["python", "./main.py"]
 #CMD [ "python", "./main.py" ]
