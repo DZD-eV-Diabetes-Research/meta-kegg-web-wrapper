@@ -172,7 +172,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         "/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}",
         response_model=MetaKeggPipelineDef,
         responses=http_exception_to_resp_desc(pipelinerun_not_found_exception),
-        description="Check the status of a triggered pipeline run.",
+        description="Qeueu the pipeline-run. If the queue is passed the pipeline will change from 'queued' into 'running' state.",
         tags=["Pipeline"],
     )
     @limiter.limit(f"1/second")
