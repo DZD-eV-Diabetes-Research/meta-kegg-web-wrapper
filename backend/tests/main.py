@@ -43,7 +43,7 @@ mekeweserver_process = multiprocessing.Process(
 mekeweserver_base_url = get_mekeweserver_base_url()
 
 
-def wait_for_mekeweserver_up_and_healthy(timeout_sec=5):
+def wait_for_mekeweserver_up_and_healthy(timeout_sec=8):
     mekeweserver_not_available = True
     timeout_end = time.time() + timeout_sec
     r = None

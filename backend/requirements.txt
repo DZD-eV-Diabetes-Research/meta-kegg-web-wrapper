@@ -30,11 +30,11 @@ cycler==0.12.1
     # via matplotlib
 deprecated==1.2.14
     # via limits
-et-xmlfile==1.1.0
+et-xmlfile==2.0.0
     # via openpyxl
-fakeredis==2.25.1
+fakeredis==2.26.1
     # via mekeweserver (backend/pyproject.toml)
-fastapi==0.115.2
+fastapi==0.115.4
     # via mekeweserver (backend/pyproject.toml)
 fonttools==4.54.1
     # via matplotlib
@@ -76,7 +76,7 @@ packaging==24.1
     #   setuptools-scm
 pandas==1.5.2
     # via metakegg
-pillow==10.4.0
+pillow==11.0.0
     # via
     #   matplotlib
     #   reportlab
@@ -93,7 +93,7 @@ pydantic==2.9.2
     #   pydantic-settings
 pydantic-core==2.23.4
     # via pydantic
-pydantic-settings==2.5.2
+pydantic-settings==2.6.0
     # via mekeweserver (backend/pyproject.toml)
 pyopenssl==24.0.0
     # via metakegg
@@ -106,6 +106,10 @@ pyproject-hooks==1.2.0
     #   build
     #   pip-tools
 pytest==8.0.1
+    # via
+    #   metakegg
+    #   pytest-asyncio
+pytest-asyncio==0.20.0
     # via metakegg
 python-dateutil==2.9.0.post0
     # via
@@ -113,13 +117,13 @@ python-dateutil==2.9.0.post0
     #   pandas
 python-dotenv==1.0.1
     # via pydantic-settings
-python-multipart==0.0.12
+python-multipart==0.0.16
     # via mekeweserver (backend/pyproject.toml)
 pytz==2024.2
     # via pandas
 pyyaml==6.0.2
     # via mekeweserver (backend/pyproject.toml)
-redis==5.1.1
+redis==5.2.0
     # via
     #   fakeredis
     #   mekeweserver (backend/pyproject.toml)
@@ -141,9 +145,9 @@ sniffio==1.3.1
     # via anyio
 sortedcontainers==2.4.0
     # via fakeredis
-starlette==0.40.0
+starlette==0.41.2
     # via fastapi
-stdlib-list==0.10.0
+stdlib-list==0.11.0
     # via getversion
 typing-extensions==4.12.2
     # via
@@ -153,7 +157,7 @@ typing-extensions==4.12.2
     #   pydantic-core
 urllib3==1.26.20
     # via requests
-uvicorn==0.31.1
+uvicorn==0.32.0
     # via mekeweserver (backend/pyproject.toml)
 wheel==0.44.0
     # via pip-tools

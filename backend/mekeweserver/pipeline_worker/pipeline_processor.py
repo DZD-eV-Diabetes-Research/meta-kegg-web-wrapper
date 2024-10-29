@@ -7,8 +7,7 @@ import asyncio
 import redis
 import zipfile
 import datetime
-
-from metaKEGG import Pipeline
+from metaKEGG.modules.pipeline_async import PipelineAsync
 
 from mekeweserver.model import (
     MetaKeggPipelineInputParams,
@@ -37,7 +36,7 @@ class MetakeggPipelineProcessor:
 
     def run(self) -> MetaKeggPipelineDef:
         try:
-            self.pipeline = Pipeline(
+            self.pipeline = PipelineAsync(
                 input_file_path=[
                     str(p.resolve())
                     for p in self.pipeline_definition.get_input_files_pathes()
