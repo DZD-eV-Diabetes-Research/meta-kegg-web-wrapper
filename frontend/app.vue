@@ -16,7 +16,7 @@ useHead({
 </script>
 
 <style>
-div {
+/* div {
   font-family: Poppins, sans-serif;
-}
+} */
 </style>

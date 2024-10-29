@@ -1,6 +1,6 @@
 <template>
     <div>
-        <UIBaseCard custom-text-align="left">
+        <UIBaseCard customTextAlign="left">
             <p class="text-4xl">MetaKegg is a tool for everyone...
             </p>
             <br>
@@ -10,13 +10,71 @@
                 ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
             </p>
         </UIBaseCard>
-        <UIBaseCard>
-            <h1 class="text-4xl font-bold">Hallo</h1>
-            <h3>Hallo</h3>
+        <div v-if="healthFetchError || !healthStatus?.healthy">
+            <UIBaseCard customMaxWidth="50rem">
+                <h1 class="text-4xl font-bold" style="color: red;">There seems to be an error with the server please try
+                    again later</h1>
+            </UIBaseCard>
+        </div>
+        <UIBaseCard customMaxWidth="75rem" v-if="healthStatus?.healthy">
+            <h1 class="text-4xl">Upload your files</h1>
+            <br>
+            <label for="fileUpload">Select your file or files</label>
+            <br>
+            <input type="file" name="fileUpload" id="fileUpload" multiple @change="printChange">
+            <br>
+            <br>
+            <div v-if="inputList">
+                <p v-for="item in inputList" key="item">{{ item }}</p>
+            </div>
+            <br>
+            <h1 v-if="analysisStatus === 'pending'">Loading</h1>
+            <div v-else>
+                <label>Select a Method</label>
+                <USelect v-model="selectedMethod" :options="analysisMethods" option-attribute="display_name"
+                    valueAttribute="internal_id" />
+            </div>
+            <br>
+            <UAccordion color="primary" variant="ghost" size="sm"
+                :items="[{ label: 'Advanced Options', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit' }]" />
+            <UButton>Start run</UButton>
         </UIBaseCard>
-
     </div>
 </template>
 
 <script setup lang="ts">
+
+const runtimeConfig = useRuntimeConfig();
+
+interface HealthStatus {
+    healthy: boolean,
+    dependencies: []
+}
+
+interface AnalysisMethods {
+    name: string,
+    display_name: string,
+    internal_id: number,
+    desc: string
+}
+
+const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
+const { data: analysisMethods, error: analysisMethodsError, status: analysisStatus } = await useFetch<AnalysisMethods[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
+
+const selectedMethod = ref(1)
+
+const inputList = ref<string[]>([])
+
+function printChange(event: Event) {
+    const input = event.target as HTMLInputElement
+
+    if (input.files) {
+        inputList.value = []
+        for (const file of input.files) {
+            inputList.value.push(file.name)
+        }
+    }
+}
+
+
 </script>

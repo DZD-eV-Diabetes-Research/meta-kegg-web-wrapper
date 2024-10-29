@@ -21,7 +21,7 @@
     </NuxtLayout>
 </template>
 
-<script>
+<script setup lang="ts">
 useHead({
     title: 'MetaKegg',
     meta: [
