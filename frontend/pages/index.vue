@@ -37,9 +37,18 @@
             <br>
             <UAccordion color="primary" variant="ghost" size="sm"
                 :items="[{ label: 'Advanced Options', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit' }]" />
-            <UButton>Start run</UButton>
+            <UButton @click="startPipeline">Start run</UButton>
+        </UIBaseCard>
+        <UIBaseCard>
+            <UContainer v-model="test" :ui="{ icon: { trailing: { pointer: 'pointer-events-auto' } } }" disabled>
+                <template #trailing>
+                    <UButton icon="i-heroicons-document-duplicate" variant="outline" color="gray"
+                        class="rounded-none rounded-r-md -me-2.5"/>
+                </template>
+            </UContainer>
         </UIBaseCard>
     </div>
+    {{ test }}
 </template>
 
 <script setup lang="ts">
@@ -65,15 +74,51 @@ const selectedMethod = ref(1)
 
 const inputList = ref<string[]>([])
 
+const selectedFiles = ref<FileList | null>(null)
+
 function printChange(event: Event) {
     const input = event.target as HTMLInputElement
 
     if (input.files) {
+        selectedFiles.value = input.files
         inputList.value = []
         for (const file of input.files) {
             inputList.value.push(file.name)
         }
     }
+}
+
+interface Ticket_ID {
+    id: string
+}
+
+const test = ref()
+
+async function startPipeline() {
+    if (!selectedFiles.value || selectedFiles.value.length === 0) {
+        console.error('No files selected')
+        return
+    }
+
+    const ticket_id = await $fetch<Ticket_ID>(`${runtimeConfig.public.baseURL}/api/pipeline`, {
+        method: 'POST'
+    })
+
+    test.value = ticket_id.id
+
+    const formData = new FormData()
+    for (let i = 0; i < selectedFiles.value.length; i++) {
+        formData.append('file', selectedFiles.value[i])
+    }
+
+    console.log(selectedFiles.value);
+    console.log(formData)
+
+
+    await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.id}/upload`, {
+        method: 'POST',
+        body: formData,
+    })
 }
 
 
