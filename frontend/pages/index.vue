@@ -9,6 +9,10 @@
                 labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et
                 ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
             </p>
+            <br>
+            <div style="text-align: center;">
+                <h1 class="text-4xl" v-if="ticket_id">Your Ticket ID for this session is:<br> {{ ticket_id.id }}</h1>
+            </div>
         </UIBaseCard>
         <div v-if="healthFetchError || !healthStatus?.healthy">
             <UIBaseCard customMaxWidth="50rem">
@@ -19,36 +23,38 @@
         <UIBaseCard customMaxWidth="75rem" v-if="healthStatus?.healthy">
             <h1 class="text-4xl">Upload your files</h1>
             <br>
-            <label for="fileUpload">Select your file or files</label>
+            <label v-if="!pipelineStatus?.pipeline_input_file_names" for="fileUpload">Select your file</label>
+            <label v-else for="fileUpload">Add an additional File</label>
             <br>
-            <input type="file" name="fileUpload" id="fileUpload" multiple @change="printChange">
+            <input type="file" name="fileUpload" id="fileUpload" @change="printUploadChange">
             <br>
             <br>
-            <div v-if="inputList">
-                <p v-for="item in inputList" key="item">{{ item }}</p>
+            <div v-if="pipelineStatus?.pipeline_input_file_names.length > 0">
+                <p> Uploaded Files </p>
+                <p v-for="item in pipelineStatus?.pipeline_input_file_names" key="item">{{ item }}</p>
             </div>
             <br>
             <h1 v-if="analysisStatus === 'pending'">Loading</h1>
             <div v-else>
                 <label>Select a Method</label>
                 <USelect v-model="selectedMethod" :options="analysisMethods" option-attribute="display_name"
-                    valueAttribute="internal_id" />
+                    valueAttribute="name" />
             </div>
             <br>
             <UAccordion color="primary" variant="ghost" size="sm"
                 :items="[{ label: 'Advanced Options', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit' }]" />
             <UButton @click="startPipeline">Start run</UButton>
-        </UIBaseCard>
-        <UIBaseCard>
-            <UContainer v-model="test" :ui="{ icon: { trailing: { pointer: 'pointer-events-auto' } } }" disabled>
-                <template #trailing>
-                    <UButton icon="i-heroicons-document-duplicate" variant="outline" color="gray"
-                        class="rounded-none rounded-r-md -me-2.5"/>
-                </template>
-            </UContainer>
+            <br>
+            <br>
+            <div v-if="isLoading && pipelineStart">
+                The monkeys are busy in the background please be patient
+                <UProgress animation="carousel" />
+            </div>
+            <div v-if="!isLoading && downloadStatus">
+                Download your <UButton @click="downloadFile">File</UButton>
+            </div>
         </UIBaseCard>
     </div>
-    {{ test }}
 </template>
 
 <script setup lang="ts">
@@ -67,59 +73,88 @@ interface AnalysisMethods {
     desc: string
 }
 
-const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
-const { data: analysisMethods, error: analysisMethodsError, status: analysisStatus } = await useFetch<AnalysisMethods[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
-
-const selectedMethod = ref(1)
-
-const inputList = ref<string[]>([])
-
-const selectedFiles = ref<FileList | null>(null)
-
-function printChange(event: Event) {
-    const input = event.target as HTMLInputElement
-
-    if (input.files) {
-        selectedFiles.value = input.files
-        inputList.value = []
-        for (const file of input.files) {
-            inputList.value.push(file.name)
-        }
-    }
-}
-
 interface Ticket_ID {
     id: string
 }
 
-const test = ref()
+const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
+const { data: analysisMethods, error: analysisMethodsError, status: analysisStatus } = await useFetch<AnalysisMethods[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
+const { data: ticket_id } = await useFetch<Ticket_ID>(`${runtimeConfig.public.baseURL}/api/pipeline`, {
+    method: "POST"
+})
 
-async function startPipeline() {
-    if (!selectedFiles.value || selectedFiles.value.length === 0) {
-        console.error('No files selected')
-        return
+const pipelineStatus = ref()
+
+const selectedMethod = ref("single_input_genes")
+
+async function printUploadChange(event: Event) {
+    const input = event.target as HTMLInputElement
+
+    if (input.files && input.files.length > 0) {
+        const formData = new FormData()
+        formData.append('file', input.files[0])
+
+        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/upload`, {
+            method: 'POST',
+            body: formData,
+        })
     }
-
-    const ticket_id = await $fetch<Ticket_ID>(`${runtimeConfig.public.baseURL}/api/pipeline`, {
-        method: 'POST'
-    })
-
-    test.value = ticket_id.id
-
-    const formData = new FormData()
-    for (let i = 0; i < selectedFiles.value.length; i++) {
-        formData.append('file', selectedFiles.value[i])
-    }
-
-    console.log(selectedFiles.value);
-    console.log(formData)
-
-
-    await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.id}/upload`, {
-        method: 'POST',
-        body: formData,
-    })
+    const status = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/status`)
+    pipelineStatus.value = status
 }
 
+const myResponse = ref()
 
+const isLoading = ref(false)
+const pipelineStart = ref(false)
+const downloadStatus = ref(false)
+
+async function startPipeline() {
+    downloadStatus.value = false
+    pipelineStart.value = true
+    isLoading.value = true
+
+    try {
+        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/run/${selectedMethod.value}`, {
+            method: "POST"
+        })
+
+        while (pipelineStatus.value.state !== 'success' && pipelineStatus.value.state !== 'failed') {
+            await new Promise(resolve => setTimeout(resolve, 5000))
+            await getStatus()
+        }
+
+        if (pipelineStatus.value.state === 'success') {
+            downloadStatus.value = true
+        }
+    } catch (error) {
+        console.error('Error in pipeline:', error)
+    } finally {
+        isLoading.value = false
+        pipelineStart.value = false
+    }
+}
+async function getStatus() {
+    pipelineStatus.value = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/status`)
+}
+
+async function downloadFile() {
+    try {
+        const downloadedFile = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/result`)
+        
+        const blobUrl = URL.createObjectURL(downloadedFile);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = pipelineStatus.value.pipeline_output_zip_file_name + '.zip';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+        console.error('Download failed:', error);
+    }
+}
 </script>
