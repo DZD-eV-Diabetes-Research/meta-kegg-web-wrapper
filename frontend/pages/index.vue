@@ -11,22 +11,23 @@
             </p>
             <br>
             <div style="text-align: center;">
-                <h1 class="text-4xl" v-if="ticket_id">Your Ticket ID for this session is:<br> {{ ticket_id.id }}</h1>
+                <h1 class="text-3xl" v-if="ticket_id">Your Ticket ID for this session is:<br> {{ ticket_id.id }}</h1>
             </div>
         </UIBaseCard>
         <div v-if="healthFetchError || !healthStatus?.healthy">
             <UIBaseCard customMaxWidth="50rem">
-                <h1 class="text-4xl font-bold" style="color: red;">There seems to be an error with the server please try
+                <h1 class="text-3xl font-bold" style="color: red;">There seems to be an error with the server please try
                     again later</h1>
             </UIBaseCard>
         </div>
         <UIBaseCard customMaxWidth="75rem" v-if="healthStatus?.healthy">
-            <h1 class="text-4xl">Upload your files</h1>
+            <h1 class="text-3xl">Step 1: Upload your files</h1>
             <br>
             <label v-if="!pipelineStatus?.pipeline_input_file_names" for="fileUpload">Select your file</label>
             <label v-else for="fileUpload">Add an additional File</label>
             <br>
-            <input type="file" name="fileUpload" id="fileUpload" @change="printUploadChange">
+            <br>
+            <input class="metaKegg-input" type="file" name="fileUpload" id="fileUpload" @change="printUploadChange">
             <br>
             <br>
             <div v-if="pipelineStatus?.pipeline_input_file_names.length > 0">
@@ -34,24 +35,42 @@
                 <p v-for="item in pipelineStatus?.pipeline_input_file_names" key="item">{{ item }}</p>
             </div>
             <br>
+            <hr>
+            <br>
+            <h1 class="text-3xl">Step 2: Select an Analysis Method</h1>
+            <br>
             <h1 v-if="analysisStatus === 'pending'">Loading</h1>
-            <div v-else>
-                <label>Select a Method</label>
+            <div v-else class="select-container">
                 <USelect v-model="selectedMethod" :options="analysisMethods" option-attribute="display_name"
                     valueAttribute="name" />
             </div>
             <br>
-            <UAccordion color="primary" variant="ghost" size="sm"
-                :items="[{ label: 'Advanced Options', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit' }]" />
+            <hr>
+            <br>
+            <h1 class="text-3xl">Step 3: (Optional) Setting Pipeline Parameters</h1>
+            <br>
+            <UAccordion color="primary" variant="ghost" size="xl"
+                :items="[{ label: 'Pipeline Parameter Setting', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit' }]"
+                :ui="{ wrapper: 'flex flex-col w-full', container: 'flex justify-center' }" />
+
+            <br>
+            <hr>
+            <br>
+            <h1 class="text-3xl">Step 4: Start the Pipeline</h1>
+            <br>
             <UButton @click="startPipeline">Start run</UButton>
             <br>
+            <br>
+            <hr>
+            <br>
+            <h1 class="text-3xl">Step 5: Download your File</h1>
             <br>
             <div v-if="isLoading && pipelineStart">
                 The monkeys are busy in the background please be patient
                 <UProgress animation="carousel" />
             </div>
             <div v-if="!isLoading && downloadStatus">
-                Download your <UButton @click="downloadFile">File</UButton>
+                <UButton @click="downloadFile">Your File</UButton>
             </div>
         </UIBaseCard>
     </div>
@@ -141,20 +160,39 @@ async function getStatus() {
 async function downloadFile() {
     try {
         const downloadedFile = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/result`)
-        
+
         const blobUrl = URL.createObjectURL(downloadedFile);
-        
+
         const link = document.createElement('a');
         link.href = blobUrl;
         link.download = pipelineStatus.value.pipeline_output_zip_file_name + '.zip';
-        
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         URL.revokeObjectURL(blobUrl);
     } catch (error) {
         console.error('Download failed:', error);
     }
 }
 </script>
+
+<style scoped>
+.select-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.select-container :deep(.u-select) {
+    max-width: 25rem;
+}
+
+.metaKegg-input {
+    font-family: 'Poppins';
+    padding: 0;
+    margin: 0;
+}
+</style>
