@@ -47,7 +47,15 @@ class MetaKeggPipelineStateManager:
         raw_data: str = self.redis_client.hget(
             self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex
         )
+        if raw_data is None and raise_exception_if_not_exists:
+            raise raise_exception_if_not_exists
         data = MetaKeggPipelineDef.model_validate_json(raw_data)
+        if data.state == "queued":
+            pos_as_str: str | None = self.redis_client.lpos(
+                self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex
+            )
+            if pos_as_str is not None:
+                data.place_in_queue = int(pos_as_str)
         return data
 
     def set_pipeline_status(self, pipeline_status: MetaKeggPipelineDef):
