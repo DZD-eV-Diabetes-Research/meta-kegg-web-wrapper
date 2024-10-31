@@ -49,10 +49,9 @@
             <br>
             <h1 class="text-3xl">Step 3: (Optional) Setting Pipeline Parameters</h1>
             <br>
-            <UAccordion color="primary" variant="ghost" size="xl"
+            <UAccordion variant="ghost" size="xl"
                 :items="[{ label: 'Pipeline Parameter Setting', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit' }]"
-                :ui="{ wrapper: 'flex flex-col w-full', container: 'flex justify-center' }" />
-
+                :ui="{ color: '#FBFAEE' }" />
             <br>
             <hr>
             <br>
@@ -74,6 +73,7 @@
             </div>
         </UIBaseCard>
     </div>
+    {{ !isLoading }} {{ downloadStatus }}
 </template>
 
 <script setup lang="ts">
