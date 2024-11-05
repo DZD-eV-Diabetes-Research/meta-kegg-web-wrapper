@@ -278,7 +278,8 @@ class MetaKeggClientConfig(BaseModel):
         description="Terms and Conditions presented to the user.", default=None
     )
     pipeline_ticket_expire_time_sec: int = Field(
-        description="Time how long a Pipeline ticket is valid. This is only for informational purposes as the backend is handling ticket expiring."
+        description="Time how long a Pipeline ticket is valid. This is only for informational purposes as the backend is handling ticket expiring.",
+        default=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN * 60,
     )
 
 
