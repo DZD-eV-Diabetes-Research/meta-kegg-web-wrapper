@@ -41,11 +41,13 @@ def _add_app_routers(app: FastAPI, background_worker: Process):
         get_api_router,
         get_client_router,
         get_health_router,
+        get_info_config_router,
     )
 
     app.include_router(get_health_router(app, background_worker))
     app.include_router(get_api_router(app))
     app.include_router(get_client_router(app))
+    app.include_router(get_info_config_router(app))
 
 
 def _add_rate_limiter(app: FastAPI):
