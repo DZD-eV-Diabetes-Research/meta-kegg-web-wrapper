@@ -333,8 +333,10 @@ def get_info_config_router(app: FastAPI) -> APIRouter:
         request: Request,
     ) -> List[MetaKeggClientLink]:
         res = []
+        print("config.CLIENT_LINK_LIST", config.CLIENT_LINK_LIST)
         for link in config.CLIENT_LINK_LIST:
-
+            print("link", link)
             res.append(MetaKeggClientLink(**link))
+        return res
 
     return mekeweclient_info_router
