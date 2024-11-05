@@ -34,6 +34,8 @@ from mekeweserver.model import (
     MetaKeggPipelineAnalysisMethod,
     MetaKeggWebServerHealthState,
     MetaKeggWebServerModuleHealthState,
+    MetaKeggClientConfig,
+    MetaKeggClientLink,
 )
 
 
@@ -290,3 +292,51 @@ def get_health_router(app: FastAPI, background_worker_process: Process) -> APIRo
         return overall_state
 
     return mekeweclient_health_router
+
+
+def get_info_config_router(app: FastAPI) -> APIRouter:
+    mekeweclient_info_router: APIRouter = APIRouter()
+    redis = get_redis_client()
+    limiter: Limiter = app.state.limiter
+
+    @mekeweclient_info_router.get(
+        "/config",
+        response_model=MetaKeggClientConfig,
+        description="Get some infos and config for the client",
+        tags=["Config/Infos"],
+    )
+    @limiter.limit(f"30/minute")
+    async def get_config(
+        request: Request,
+    ) -> MetaKeggClientConfig:
+
+        return MetaKeggClientConfig(
+            contact_email=config.CLIENT_CONTACT_EMAIL,
+            bug_report_email=(
+                config.CLIENT_BUG_REPORT_EMAIL
+                if config.CLIENT_BUG_REPORT_EMAIL is not None
+                else config.CLIENT_CONTACT_EMAIL
+            ),
+            terms_and_conditions=config.CLIENT_TERMS_AND_CONDITIONS,
+            pipeline_ticket_expire_time_sec=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN
+            * 60,
+        )
+
+    @mekeweclient_info_router.get(
+        "/info-links",
+        response_model=List[MetaKeggClientLink],
+        description="Get some infos and config for the client",
+        tags=["Config/Infos"],
+    )
+    @limiter.limit(f"30/minute")
+    async def get_links(
+        request: Request,
+    ) -> List[MetaKeggClientLink]:
+        res = []
+        print("config.CLIENT_LINK_LIST", config.CLIENT_LINK_LIST)
+        for link in config.CLIENT_LINK_LIST:
+            print("link", link)
+            res.append(MetaKeggClientLink(**link))
+        return res
+
+    return mekeweclient_info_router

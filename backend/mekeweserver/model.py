@@ -264,3 +264,25 @@ class MetaKeggWebServerModuleHealthState(BaseModel):
 class MetaKeggWebServerHealthState(BaseModel):
     healthy: bool
     dependencies: list[MetaKeggWebServerModuleHealthState]
+
+
+class MetaKeggClientConfig(BaseModel):
+    contact_email: Optional[str] = Field(
+        description="Email that clients can present for contact.", default=None
+    )
+    bug_report_email: Optional[str] = Field(
+        description="Email address that is used for bug reports. Will be the same as `contact_email` if not explicit configured in the backend otherwise.",
+        default=None,
+    )
+    terms_and_conditions: Optional[str] = Field(
+        description="Terms and Conditions presented to the user.", default=None
+    )
+    pipeline_ticket_expire_time_sec: int = Field(
+        description="Time how long a Pipeline ticket is valid. This is only for informational purposes as the backend is handling ticket expiring.",
+        default=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN * 60,
+    )
+
+
+class MetaKeggClientLink(BaseModel):
+    title: str = Field(description="Title of the link")
+    link: str = Field(description="URL of the link")

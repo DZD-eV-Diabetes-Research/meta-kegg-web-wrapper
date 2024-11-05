@@ -1,6 +1,6 @@
 import os
 import uuid
-from typing import Literal, Optional, TypedDict
+from typing import Literal, Optional, TypedDict, List, Dict
 from pathlib import Path, PurePath
 from typing_extensions import Self
 from pydantic import (
@@ -137,6 +137,14 @@ class Config(BaseSettings):
     )
     RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES: int = Field(
         default=3, description=""
+    )
+
+    CLIENT_CONTACT_EMAIL: Optional[str] = Field(default=None)
+    CLIENT_BUG_REPORT_EMAIL: Optional[str] = Field(default=None)
+    CLIENT_TERMS_AND_CONDITIONS: Optional[str] = Field(default=None)
+    CLIENT_LINK_LIST: Optional[List[Dict[str, str]]] = Field(
+        default_factory=list,
+        examples=[[{"title": "Paper xyz", "link": "https://doi.org/12345"}]],
     )
 
     class Config:
