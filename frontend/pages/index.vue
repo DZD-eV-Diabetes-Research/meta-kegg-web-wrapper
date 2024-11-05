@@ -5,14 +5,21 @@
             </p>
             <br>
             <p class="text-2xl">
-                Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut
+                Lorem ipsum dolor sit amet, <NuxtLink style="color: blue;" to="https://pubmed.ncbi.nlm.nih.gov/"
+                    target="_blank">article</NuxtLink> sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut
                 labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et
-                ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+                ea rebum. Stet clita kasd gubergren, no sea takimata <NuxtLink style="color: blue;"
+                    to="https://github.com" target="_blank">documentation</NuxtLink> sanctus est Lorem ipsum dolor sit
+                amet.
+                <NuxtLink style="color: blue;" to="/help">Help</NuxtLink>
             </p>
             <br>
             <div style="text-align: center;">
                 <h1 class="text-3xl" v-if="ticket_id">Your Ticket ID for this session is:<br> {{ ticket_id.id }}</h1>
             </div>
+            <br>
+            <UProgress :value="3" />
+            <div v-if="pipelineStatus">{{ pipelineStatus }}</div>
         </UIBaseCard>
         <div v-if="healthFetchError || !healthStatus?.healthy">
             <UIBaseCard customMaxWidth="50rem">
@@ -23,12 +30,7 @@
         <UIBaseCard customMaxWidth="75rem" v-if="healthStatus?.healthy">
             <h1 class="text-3xl">Step 1: Upload your files</h1>
             <br>
-            <label v-if="!pipelineStatus?.pipeline_input_file_names" for="fileUpload">Select your file</label>
-            <label v-else for="fileUpload">Add an additional File</label>
-            <br>
-            <br>
-            <input class="metaKegg-input" type="file" name="fileUpload" id="fileUpload" @change="printUploadChange">
-            <br>
+            <UICustomInputField @change="printUploadChange" :label="inputLabel" />
             <br>
             <div v-if="pipelineStatus?.pipeline_input_file_names.length > 0">
                 <p> Uploaded Files </p>
@@ -49,9 +51,8 @@
             <br>
             <h1 class="text-3xl">Step 3: (Optional) Setting Pipeline Parameters</h1>
             <br>
-            <UAccordion variant="ghost" size="xl"
-                :items="[{ label: 'Pipeline Parameter Setting', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit' }]"
-                :ui="{ color: '#FBFAEE' }" />
+            <UAccordion variant="soft" size="xl"
+                :items="[{ label: 'Pipeline Parameter Setting', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit' }]" />
             <br>
             <hr>
             <br>
@@ -64,19 +65,33 @@
             <br>
             <h1 class="text-3xl">Step 5: Download your File</h1>
             <br>
-            <div v-if="isLoading && pipelineStart">
-                The monkeys are busy in the background please be patient
-                <UProgress animation="carousel" />
+            <div v-if="!errorMessage">
+                <div v-if="isLoading && pipelineStart">
+                    The monkeys are busy in the background please be patient
+                    <UProgress animation="carousel" />
+                </div>
+                <div v-if="!isLoading && downloadStatus">
+                    <UButton @click="downloadFile">Your File</UButton>
+                </div>
             </div>
-            <div v-if="!isLoading && downloadStatus">
-                <UButton @click="downloadFile">Your File</UButton>
+            <div v-else>
+                <h1 class="text-3xl font-bold" style="color: red;">There seems to be an error: {{ errorMessage }}
+                </h1>
+                <br>
+                <UAccordion v-if="errorMessageDetail" variant="ghost" size="xl" color="red"
+                    :items="[{ label: 'Detailed error', content: `${errorMessageDetail}` }]">
+                    <template #errorContent>
+                        <p style="color: red;">{{ errorMessageDetail }}</p>
+                    </template>
+                </UAccordion>
             </div>
         </UIBaseCard>
     </div>
-    {{ !isLoading }} {{ downloadStatus }}
 </template>
 
 <script setup lang="ts">
+
+const pipeLineProgress = ref(0)
 
 const runtimeConfig = useRuntimeConfig();
 
@@ -103,8 +118,16 @@ const { data: ticket_id } = await useFetch<Ticket_ID>(`${runtimeConfig.public.ba
 })
 
 const pipelineStatus = ref()
-
 const selectedMethod = ref("single_input_genes")
+const formDataCheck = ref(false)
+
+const inputLabel = computed(() => {
+    if (pipelineStatus.value?.pipeline_input_file_names?.length > 0) {
+        return "Add an additional File"
+    } else {
+        return "Select your File"
+    }
+})
 
 async function printUploadChange(event: Event) {
     const input = event.target as HTMLInputElement
@@ -112,6 +135,7 @@ async function printUploadChange(event: Event) {
     if (input.files && input.files.length > 0) {
         const formData = new FormData()
         formData.append('file', input.files[0])
+        formDataCheck.value = true
 
         await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/upload`, {
             method: 'POST',
@@ -122,7 +146,8 @@ async function printUploadChange(event: Event) {
     pipelineStatus.value = status
 }
 
-const myResponse = ref()
+const errorMessage = ref("")
+const errorMessageDetail = ref("")
 
 const isLoading = ref(false)
 const pipelineStart = ref(false)
@@ -132,6 +157,15 @@ async function startPipeline() {
     downloadStatus.value = false
     pipelineStart.value = true
     isLoading.value = true
+    errorMessage.value = ""
+    errorMessageDetail.value = ""
+
+    if (formDataCheck.value === false) {
+        errorMessage.value = "You need to upload a file"
+        return
+    }
+
+    console.log("here");
 
     try {
         await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/run/${selectedMethod.value}`, {
@@ -146,6 +180,13 @@ async function startPipeline() {
         if (pipelineStatus.value.state === 'success') {
             downloadStatus.value = true
         }
+
+        if (pipelineStatus.value.error) {
+            errorMessage.value = pipelineStatus.value.error
+            errorMessageDetail.value = pipelineStatus.value.error_traceback
+        }
+
+
     } catch (error) {
         console.error('Error in pipeline:', error)
     } finally {
@@ -153,8 +194,20 @@ async function startPipeline() {
         pipelineStart.value = false
     }
 }
+
+const maxPlace = ref()
+const isMaxPlaceSet = ref(false)
+
 async function getStatus() {
     pipelineStatus.value = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/status`)
+
+    if (pipelineStatus.value.place_in_queue) {
+        if (!isMaxPlaceSet.value) {
+            maxPlace.value = pipelineStatus.value.place_in_queue
+            isMaxPlaceSet.value = true
+        }
+        pipeLineProgress.value = Math.round(100 * (1 - (pipelineStatus.value.place_in_queue / maxPlace.value)))
+    }
 }
 
 async function downloadFile() {
@@ -188,11 +241,5 @@ async function downloadFile() {
 
 .select-container :deep(.u-select) {
     max-width: 25rem;
-}
-
-.metaKegg-input {
-    font-family: 'Poppins';
-    padding: 0;
-    margin: 0;
 }
 </style>
