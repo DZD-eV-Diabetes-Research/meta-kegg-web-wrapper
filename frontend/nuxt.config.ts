@@ -9,5 +9,5 @@ export default defineNuxtConfig({
     public: {
       baseURL: '',
     },
-  }, ssr: false
+  }, ssr: false,
 })
