@@ -91,7 +91,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     @mekewe_router.get(
         "/analysis",
         response_model=List[MetaKeggPipelineAnalysisMethod],
-        description="List all MetaKEGG analysis methods available. The name will be used to start a anylsises pipeline run in endpoint `/pipeline/{pipeline_ticket_id}/run/...`",
+        description="List all MetaKEGG analysis methods available. The name will be used to start a analysis pipeline run in endpoint `/pipeline/{pipeline_ticket_id}/run/...`",
         tags=["Analysis Method"],
     )
     @limiter.limit(f"1/second")
@@ -99,6 +99,32 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
     ):
         return [e.value for e in MetaKeggPipelineAnalysisMethods]
+
+    ##ENDPOINT: /analysis
+    @mekewe_router.get(
+        "/params",
+        response_model=Dict[str, Dict[str, str | int | float]],
+        description="List all MetaKEGG parameters methods available. The name will be used to start a analysis pipeline run in endpoint `/pipeline/{pipeline_ticket_id}/run/...`",
+        tags=["Analysis Method"],
+    )
+    @limiter.limit(f"1/second")
+    async def list_available_analysis_parameters(
+        request: Request,
+    ):
+        attributes = {}
+
+        for field_name, field_info in MetaKeggPipelineInputParams.model_fields.items():
+
+            # Fetch the type name and default value of each field
+            field_type = field_info.annotation
+            field_default = field_info.default
+
+            # Populate the attributes dictionary
+            attributes[field_name] = {"type": field_type.__name__}
+            if field_default:
+                attributes[field_name]["default"] = field_default
+
+        return attributes
 
     ##ENDPOINT: /pipeline
     @mekewe_router.post(
