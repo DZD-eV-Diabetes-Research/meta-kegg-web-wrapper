@@ -361,7 +361,8 @@ async function downloadFile() {
 }
 
 .step-box {
-    margin: 2% 0%;
+    margin-top: 2%;
+    margin-bottom: 1%;
 }
 
 .custom-hr{
