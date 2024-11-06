@@ -1,4 +1,14 @@
-from typing import Annotated, Optional, Dict, List, Type, Literal
+from typing import (
+    Annotated,
+    Optional,
+    Dict,
+    List,
+    Type,
+    Literal,
+    get_origin,
+    get_args,
+    Union,
+)
 import os
 import pydantic
 import uuid
@@ -94,7 +104,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="List all MetaKEGG analysis methods available. The name will be used to start a analysis pipeline run in endpoint `/pipeline/{pipeline_ticket_id}/run/...`",
         tags=["Analysis Method"],
     )
-    @limiter.limit(f"1/second")
+    @limiter.limit(f"6/second")
     async def list_available_analysis_methods(
         request: Request,
     ):
@@ -103,27 +113,28 @@ def get_api_router(app: FastAPI) -> APIRouter:
     ##ENDPOINT: /analysis
     @mekewe_router.get(
         "/params",
-        response_model=Dict[str, Dict[str, str | int | float]],
+        response_model=Dict[str, Dict[str, str | int | float | bool]],
         description="List all MetaKEGG parameters available.",
         tags=["Analysis Method"],
     )
-    @limiter.limit(f"1/second")
+    @limiter.limit(f"6/second")
     async def list_available_analysis_parameters(
         request: Request,
     ):
         attributes = {}
 
         for field_name, field_info in MetaKeggPipelineInputParams.model_fields.items():
-
-            # Fetch the type name and default value of each field
+            required = True
+            # Fetch the type name and default value of each param field
             field_type = field_info.annotation
-            field_default = field_info.default
+            if get_origin(field_type) is Union:
+                required = False
+                field_type = get_args(field_type)[0]
 
-            # Populate the attributes dictionary
-            attributes[field_name] = {"type": field_type.__name__}
+            attributes[field_name] = {"type": field_type.__name__, "required": required}
+            field_default = field_info.default
             if field_default:
                 attributes[field_name]["default"] = field_default
-
         return attributes
 
     ##ENDPOINT: /pipeline
