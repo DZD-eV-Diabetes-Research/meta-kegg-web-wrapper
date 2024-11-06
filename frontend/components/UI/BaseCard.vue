@@ -1,5 +1,6 @@
 <template>
-    <div :class="{ 'base-card': !naked, 'naked-card': naked }" :style="{textAlign: customTextAlign, 'max-width': customMaxWidth}">
+    <div :class="{ 'base-card': !naked, 'narrow-card': narrowWidth }"
+        :style="{ textAlign: customTextAlign }">
         <slot></slot>
     </div>
 </template>
@@ -8,17 +9,13 @@
 
 export default {
     props: {
-        naked: {
+        narrowWidth: { 
             type: Boolean,
             default: false
         },
-        customTextAlign:{
+        customTextAlign: {
             type: String,
             default: "center"
-        },
-        customMaxWidth:{
-            type: String,
-            default: "100rem"
         }
     }
 }
@@ -31,13 +28,25 @@ export default {
     padding: 1rem;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
+    margin-left: 4%;
+    margin-right: 4%;
+    width: 92%;
+    max-width: calc(100% - 8%);
+    box-sizing: border-box;
 }
 
-.naked-card {
-    margin: 0; 
-    max-width: none;
-    padding: 0; 
-    border: none; 
-    box-shadow: none;
+.narrow-card {
+    margin-left: 15%;
+    margin-right: 15%;
+    width: 70%;
+    max-width: calc(100% - 30%);
+}
+
+@media (max-width: 768px) {
+    .narrow-card {
+        margin-left: 5%;
+        margin-right: 5%;
+        width: 90%;
+    }
 }
 </style>
