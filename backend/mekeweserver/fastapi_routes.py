@@ -158,7 +158,10 @@ def get_api_router(app: FastAPI) -> APIRouter:
     @mekewe_router.patch(
         "/pipeline/{pipeline_ticket_id}",
         response_model=MetaKeggPipelineDef,
-        description="Update the pipeline params of an allready existing pipeline run definition. The pipeline must not be started via `/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}` allready.",
+        description="""
+        Update the pipeline params of an allready existing pipeline run definition. 
+        The pipeline must not be started via `/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}` allready. 
+        Only provided params get updated. You dont have to supply all params every PATCH call.""",
         tags=["Pipeline"],
     )
     @limiter.limit(f"10/minute")
@@ -167,19 +170,27 @@ def get_api_router(app: FastAPI) -> APIRouter:
         pipeline_ticket_id: uuid.UUID,
         pipeline_params: Annotated[MetaKeggPipelineInputParamsUpdate, Query()] = None,
     ) -> MetaKeggPipelineDef:
+
+        # get current params from db
         pipeline_status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
             redis_client=redis
         ).get_pipeline_status(
             pipeline_ticket_id,
             raise_exception_if_not_exists=pipelinerun_not_found_exception,
         )
+
+        # check if we still can update the pipeline params of if the pipeline is allready triggered
         if pipeline_status.state != "initialized":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Pipeline is not in an updatable state anymore",
             )
+
+        # Update the current state with new params that where supplied
         for key, val in pipeline_params.model_dump(exclude_unset=True).items():
             setattr(pipeline_status.pipeline_params, key, val)
+
+        # Save the new state to the db
         MetaKeggPipelineStateManager(redis_client=redis).set_pipeline_status(
             pipeline_status,
         )
