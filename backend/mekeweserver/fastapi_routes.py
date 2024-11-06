@@ -102,7 +102,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         "/analysis",
         response_model=List[MetaKeggPipelineAnalysisMethod],
         description="List all MetaKEGG analysis methods available. The name will be used to start a analysis pipeline run in endpoint `/pipeline/{pipeline_ticket_id}/run/...`",
-        tags=["Analysis Method"],
+        tags=["Analysis Methods"],
     )
     @limiter.limit(f"6/second")
     async def list_available_analysis_methods(
@@ -114,8 +114,8 @@ def get_api_router(app: FastAPI) -> APIRouter:
     @mekewe_router.get(
         "/params",
         response_model=Dict[str, Dict[str, str | int | float | bool]],
-        description="List all MetaKEGG parameters available.",
-        tags=["Analysis Method"],
+        description="List all MetaKEGG parameters for the analysis methods available.",
+        tags=["Analysis Methods"],
     )
     @limiter.limit(f"6/second")
     async def list_available_analysis_parameters(
