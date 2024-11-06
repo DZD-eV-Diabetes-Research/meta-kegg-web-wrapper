@@ -52,7 +52,7 @@ class MetaKeggPipelineStateManager:
         data = MetaKeggPipelineDef.model_validate_json(raw_data)
         if data.state == "queued":
             pos_as_str: str | None = self.redis_client.lpos(
-                self.REDIS_NAME_PIPELINE_STATES, ticket_id.hex
+                self.REDIS_NAME_PIPELINE_QUEUE, ticket_id.hex
             )
             if pos_as_str is not None:
                 data.place_in_queue = int(pos_as_str)
