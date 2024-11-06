@@ -187,7 +187,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
             )
 
         # Update the current state with new params that where supplied
-        for key, val in pipeline_params.model_dump(exclude_unset=True).items():
+        for key, val in pipeline_params.model_dump(
+            exclude_unset=True, exclude_defaults=True
+        ).items():
             setattr(pipeline_status.pipeline_params, key, val)
 
         # Save the new state to the db
