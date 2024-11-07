@@ -103,6 +103,17 @@ class MetaKeggPipelineStateManager:
     ) -> MetaKeggPipelineDef:
         log.info(f"Add pipeline-run with id '{ticket_id}' to queue.")
         pipeline_status = self.get_pipeline_status(ticket_id)
+        
+        # reset error from previous runs (if existent)...
+        pipeline_status.error = None
+        pipeline_status.error_traceback = None
+        pipeline_status.output_log = None
+        pipeline_status.finished_at_utc = None
+        if pipeline_status.get_output_zip_file_path() is not None and pipeline_status.get_output_zip_file_path().exists():
+            # delete results from previous runs
+            shutil.rmtree(pipeline_status.get_output_zip_file_path())
+        # ...reset done
+
         pipeline_status.state = "queued"
         pipeline_status.pipeline_analyses_method = next(
             e.value
@@ -113,19 +124,13 @@ class MetaKeggPipelineStateManager:
         self.redis_client.lpush(self.REDIS_NAME_PIPELINE_QUEUE, ticket_id.hex)
         return pipeline_status
 
+
     def set_pipeline_state_as_running(
         self,
         ticket_id: uuid.UUID,
     ) -> MetaKeggPipelineDef:
         pipeline_status = self.get_pipeline_status(ticket_id)
-        # reset error from previous runs
-        pipeline_status.error = None
-        pipeline_status.error_traceback = None
-        pipeline_status.output_log = None
-        pipeline_status.finished_at_utc = None
-        if pipeline_status.get_output_zip_file_path() is not None and pipeline_status.get_output_zip_file_path().exists():
-            # delete results from previous runs
-            shutil.rmtree(pipeline_status.get_output_zip_file_path())
+        
         pipeline_status.state = "running"
         pipeline_status.started_at_utc = datetime.datetime.now(tz=datetime.timezone.utc)
         self.set_pipeline_status(pipeline_status)
