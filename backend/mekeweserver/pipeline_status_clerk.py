@@ -109,9 +109,9 @@ class MetaKeggPipelineStateManager:
         pipeline_status.error_traceback = None
         pipeline_status.output_log = None
         pipeline_status.finished_at_utc = None
-        if pipeline_status.get_output_zip_file_path() is not None and pipeline_status.get_output_zip_file_path().exists():
+        if pipeline_status.get_output_zip_file_path() is not None:
             # delete results from previous runs
-            shutil.rmtree(pipeline_status.get_output_zip_file_path())
+            pipeline_status.get_output_zip_file_path().unlink(missing_ok=True)
         # ...reset done
 
         pipeline_status.state = "queued"
