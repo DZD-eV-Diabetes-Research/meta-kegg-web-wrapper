@@ -34,7 +34,7 @@
                 <h1 class="text-3xl">Step 1: Upload your files</h1>
             </div>
             <div v-if="acceptAGB" style="margin-top: 1%; margin-bottom: 0.5%">
-                <UICustomInputField @change="printUploadChange" :label="inputLabel" :checkAGB="acceptAGB" />
+                <UICustomInputField @change="printUploadChange" :label="inputLabel"/>
             </div>
             <div v-else style="margin-top: 1%; margin-bottom: 0.5%">
                 <UButton label="Select your File" variant="outline" @click="uncheckedAGB">
@@ -42,10 +42,9 @@
                         <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
                     </template>
                 </UButton>
-            </div>
-            
-            <div style="display: flex; justify-content: center;">
-                <UCheckbox v-model="acceptAGB" name="acceptAGB" label="Accept the AGB" />
+            </div>  
+            <div style="display: flex; justify-content: center; margin-bottom: 0.5%;">
+                <UCheckbox label="Accept the AGB" v-model="acceptAGB" required :disabled="acceptAGB"/>
             </div>
             <div v-if="pipelineStatus?.pipeline_input_file_names?.length > 0">
                 <p> Uploaded Files </p>
@@ -58,7 +57,7 @@
             <h1 v-if="analysisStatus === 'pending'">Loading</h1>
             <div v-else class="select-container">
                 <USelect v-model="selectedMethod" :options="analysisMethods" option-attribute="display_name"
-                    valueAttribute="name" style="margin-bottom: 1%"/>
+                    valueAttribute="name" style="margin-bottom: 1%" />
             </div>
             <hr class="custom-hr">
             <div class="step-box">
@@ -93,23 +92,23 @@
             <UButton @click="startPipeline">Start run</UButton>
             <hr class="custom-hr">
             <div class="step-box">
-            <h1 class="text-3xl">Step 5: Download your File</h1>
+                <h1 class="text-3xl">Step 5: Download your File</h1>
             </div>
             <div v-if="!errorMessage">
-                <div v-if="myTestAKAStart">
+                <!-- <div v-if="myTestAKAStart">
                     <label for="totalPlaces">totalPlaces</label>
                     <input v-model="totalPlaces" id="totalPlaces" type="text" style="border: solid;">
                     <label for="totalPlaces">currentPlace</label>
                     <input v-model="currentPlace" id="currentPlace" type="text" style="border: solid;">
                     <div style="margin: 2% 0%;">
-                    <UProgress :value="progressBar" />
-                    <div style="text-align: right; color: #31c363;">
-                        <p>Your current place is {{ currentPlace }} out of {{ totalPlaces }}</p>
+                        <UProgress :value="progressBar" />
+                        <div style="text-align: right; color: #31c363;">
+                            <p>Your current place is {{ currentPlace }} out of {{ totalPlaces }}</p>
+                        </div>
                     </div>
-                </div>
-                </div>
+                </div> -->
                 <div v-if="isLoading && pipelineStart">
-                    The monkeys are busy in the background please be patient
+                    <p style="margin-bottom: 0.5%;">The monkeys are busy in the background please be patient</p>
                     <UProgress animation="carousel" />
                 </div>
                 <div v-if="!isLoading && downloadStatus">
@@ -121,9 +120,10 @@
                 </div>
             </div>
             <div v-else>
-                <h1 class="text-3xl font-bold" style="color: red; margin: 1% 0%">There seems to be an error: {{ errorMessage }} 
+                <h1 class="text-3xl font-bold" style="color: red; margin: 1% 0%">There seems to be an error: {{
+                    errorMessage }}
                 </h1>
-                
+
                 <UAccordion v-if="errorMessageDetail" variant="outline" size="xl" color="red"
                     :items="[{ label: 'Detailed error', content: `${errorMessageDetail}` }]">
                     <template #errorContent>
@@ -145,7 +145,6 @@ const currentPlace = ref(30)
 const progressBar = computed(() => {
     return Math.round(100 * (1 - (currentPlace.value / totalPlaces.value)))
 })
-
 
 const pipeLineProgress = ref(0)
 
@@ -176,6 +175,7 @@ const { data: ticket_id } = await useFetch<Ticket_ID>(`${runtimeConfig.public.ba
 })
 
 const acceptAGB = ref(false)
+
 const pipelineStatus = ref()
 const selectedMethod = ref("single_input_genes")
 const formDataCheck = ref(false)
@@ -232,6 +232,7 @@ async function startPipeline() {
         await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id.value?.id}/run/${selectedMethod.value}`, {
             method: "POST"
         })
+        await getStatus()
 
         while (pipelineStatus.value.state !== 'success' && pipelineStatus.value.state !== 'failed') {
             await new Promise(resolve => setTimeout(resolve, 5000))
@@ -365,7 +366,7 @@ async function downloadFile() {
     margin-bottom: 1%;
 }
 
-.custom-hr{
+.custom-hr {
     margin: 2% 0%;
 }
 </style>

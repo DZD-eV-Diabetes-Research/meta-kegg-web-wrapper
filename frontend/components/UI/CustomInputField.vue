@@ -14,7 +14,6 @@
 
 interface Props {
     label: string;
-    checkAGB: boolean;
 }
 
 const props = defineProps<Props>()

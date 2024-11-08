@@ -1,5 +1,5 @@
 <template>
-    <div :class="{ 'base-card': !naked, 'narrow-card': narrowWidth }"
+    <div :class="{ 'base-card': true, 'narrow-card': narrowWidth }"
         :style="{ textAlign: customTextAlign }">
         <slot></slot>
     </div>
