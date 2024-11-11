@@ -112,14 +112,14 @@ def get_api_router(app: FastAPI) -> APIRouter:
 
     ##ENDPOINT: /analysis
     @mekewe_router.get(
-        "/params",
+        "/{analysis_method_name}/params",
         response_model=Dict[str, Dict[str, str | int | float | bool]],
         description="List all MetaKEGG parameters for the analysis methods available.",
         tags=["Analysis Methods"],
     )
     @limiter.limit(f"6/second")
     async def list_available_analysis_parameters(
-        request: Request,
+        request: Request, analysis_method_name: str
     ):
         attributes = {}
 

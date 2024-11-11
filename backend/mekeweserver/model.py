@@ -1,4 +1,13 @@
-from typing import Literal, Optional, List
+from typing import (
+    Literal,
+    Optional,
+    List,
+    Awaitable,
+    Type,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 from typing_extensions import Self
 from pydantic import BaseModel, Field, field_serializer
 import uuid
@@ -6,6 +15,7 @@ from enum import Enum
 from mekeweserver.config import Config
 import datetime
 from pathlib import Path, PurePath
+from metaKEGG import PipelineAsync
 
 config = Config()
 
@@ -15,6 +25,10 @@ class MetaKeggPipelineAnalysisMethod(BaseModel):
     display_name: str
     internal_id: int
     desc: Optional[str] = None
+    function: Awaitable = Field(exclude=True)
+
+    def get_params(self) -> List[Type]:
+        pass
 
 
 class MetaKeggPipelineAnalysisMethods(Enum):
@@ -23,54 +37,63 @@ class MetaKeggPipelineAnalysisMethods(Enum):
         display_name="Single Input Genes Analysis",
         internal_id=1,
         desc="Perform the Single Input Analysis for Gene IDs.",
+        function=PipelineAsync.single_input_genes,
     )
     single_input_transcripts = MetaKeggPipelineAnalysisMethod(
         name="single_input_transcripts",
         display_name="Single Input Transcripts Analysis",
         internal_id=2,
         desc="Perform the Single Input Analysis for Transcript IDs.",
+        function=PipelineAsync.single_input_transcripts,
     )
     single_input_genes_bulk_mapping = MetaKeggPipelineAnalysisMethod(
         name="single_input_genes_bulk_mapping",
         display_name="Single input genes bulk mapping Analysis",
         internal_id=3,
         desc="Perform a single input analysis with bulk mapping for genes.",
+        function=PipelineAsync.single_input_genes_bulk_mapping,
     )
     multiple_inputs = MetaKeggPipelineAnalysisMethod(
         name="multiple_inputs",
         display_name="multiple inputs Analysis",
         internal_id=4,
         desc="Perform the Multiple Inputs Analysis.",
+        function=PipelineAsync.multiple_inputs,
     )
     single_input_with_methylation = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_methylation",
         display_name="single input with methylation",
         internal_id=5,
         desc="Perform Single Input Analysis with Methylation.",
+        function=PipelineAsync.single_input_with_methylation,
     )
     single_input_with_methylation_quantification = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_methylation_quantification",
         display_name="single input with methylation quantification Analysis",
         internal_id=6,
         desc="Perform Single Input Analysis with methylation quantification.",
+        function=PipelineAsync.single_input_with_methylation_quantification,
     )
     single_input_with_miRNA = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_miRNA",
         display_name="single input with miRNA Analysis",
         internal_id=7,
         desc="Perform Single Input Analysis with miRNA.",
+        function=PipelineAsync.single_input_with_miRNA,
     )
     single_input_with_miRNA_quantification = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_miRNA_quantification",
         display_name="single input with miRNA quantification Analysis",
         internal_id=8,
         desc="Perform Single Input Analysis with miRNA.",
+        function=PipelineAsync.single_input_with_miRNA_quantification,
     )
     single_input_with_methylation_and_miRNA = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_methylation_and_miRNA",
         display_name="single input with methylation and miRNA Analysis",
         internal_id=9,
         desc="Perform Single Input Analysis with miRNA.",
+        function=PipelineAsync.single_input_with_methylation_and_miRNA,
     )
 
 
