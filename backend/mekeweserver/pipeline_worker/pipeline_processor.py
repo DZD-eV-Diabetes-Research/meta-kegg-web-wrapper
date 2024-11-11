@@ -10,9 +10,10 @@ import datetime
 from metaKEGG.modules.pipeline_async import PipelineAsync
 
 from mekeweserver.model import (
-    MetaKeggPipelineInputParams,
+    MetaKeggPipelineInputParamsDocs,
     MetaKeggPipelineAnalysisMethod,
     MetaKeggPipelineDef,
+    UNSET,
 )
 from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 from mekeweserver.pipeline_worker.pipeline_output_catcher import (
@@ -44,7 +45,7 @@ class MetakeggPipelineProcessor:
                 output_folder_name=str(
                     self.pipeline_definition.get_output_files_dir().resolve()
                 ),
-                **self.pipeline_definition.pipeline_params.model_dump(),
+                **self.pipeline_definition.pipeline_params.global_params.model_dump(),
             )
             method: MetaKeggPipelineAnalysisMethod = (
                 self.pipeline_definition.pipeline_analyses_method
@@ -67,7 +68,11 @@ class MetakeggPipelineProcessor:
                     self.pipeline_state_manager.redis_client,
                 )
             ):
-                event_loop.run_until_complete(analysis_method_func())
+                event_loop.run_until_complete(
+                    analysis_method_func(
+                        **self.pipeline_definition.pipeline_params.method_specific_params
+                    )
+                )
         except Exception as e:
             self.pipeline_definition = self.handle_exception(e)
             return self.pipeline_definition

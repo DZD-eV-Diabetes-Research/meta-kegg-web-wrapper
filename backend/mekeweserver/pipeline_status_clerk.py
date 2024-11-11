@@ -10,8 +10,9 @@ import redis
 from mekeweserver.model import (
     MetaKeggPipelineDef,
     MetaKeggPipelineTicket,
-    MetaKeggPipelineInputParams,
-    MetaKeggPipelineAnalysisMethods,
+    MetaKeggPipelineInputParamsDocs,
+    MetaKeggPipelineAnalysisMethodDocs,
+    MetaKeggPipelineInputParamsValues,
 )
 from mekeweserver.config import Config
 from mekeweserver.log import get_logger
@@ -28,15 +29,15 @@ class MetaKeggPipelineStateManager:
         self.redis_client = redis_client
 
     def init_new_pipeline_run(
-        self, params: MetaKeggPipelineInputParams
+        self, params: MetaKeggPipelineInputParamsValues
     ) -> MetaKeggPipelineTicket:
         ticket = MetaKeggPipelineTicket()
         pipeline_status = MetaKeggPipelineDef(
             state="initialized",
             place_in_queue=None,
             ticket=ticket,
-            pipeline_params=params,
             pipeline_input_file_names=None,
+            pipeline_params=params,
         )
         self.set_pipeline_status(pipeline_status)
         return ticket
@@ -106,7 +107,7 @@ class MetaKeggPipelineStateManager:
         pipeline_status.state = "queued"
         pipeline_status.pipeline_analyses_method = next(
             e.value
-            for e in MetaKeggPipelineAnalysisMethods
+            for e in MetaKeggPipelineAnalysisMethodDocs
             if e.name == analysis_method_name
         )
         self.set_pipeline_status(pipeline_status)

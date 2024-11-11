@@ -22,6 +22,7 @@ from fastapi import (
     HTTPException,
     status,
     Request,
+    Body,
 )
 from slowapi import Limiter
 from fastapi.responses import FileResponse
@@ -34,18 +35,24 @@ from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 
 config = Config()
 
-
+from metaKEGG import PipelineAsync
 from mekeweserver.model import (
-    MetaKeggPipelineInputParams,
-    MetaKeggPipelineInputParamsUpdate,
+    MetaKeggPipelineInputParamsDocs,
     MetaKeggPipelineTicket,
     MetaKeggPipelineDef,
-    MetaKeggPipelineAnalysisMethods,
+    MetaKeggPipelineAnalysisMethodDocs,
     MetaKeggPipelineAnalysisMethod,
     MetaKeggWebServerHealthState,
     MetaKeggWebServerModuleHealthState,
     MetaKeggClientConfig,
     MetaKeggClientLink,
+    MetaKeggPipelineInputParamDocItem,
+    MetaKeggPipelineInputParamsDesc,
+    MetaKeggPipelineAnalysisMethods,
+    MetaKeggPipelineInputParamsValues,
+    get_param_docs,
+    get_param_model,
+    GlobalParamModel,
 )
 
 
@@ -91,6 +98,8 @@ pipeline_status_exceptions_reponse_models: Dict[
 for e in pipeline_status_exceptions:
     pipeline_status_exceptions_reponse_models.update(http_exception_to_resp_desc(e))
 
+analyses_method_names = [e.name for e in MetaKeggPipelineAnalysisMethods]
+
 
 def get_api_router(app: FastAPI) -> APIRouter:
     mekewe_router: APIRouter = APIRouter(prefix="/api")
@@ -108,34 +117,30 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def list_available_analysis_methods(
         request: Request,
     ):
-        return [e.value for e in MetaKeggPipelineAnalysisMethods]
+        return [e.value for e in MetaKeggPipelineAnalysisMethodDocs]
 
     ##ENDPOINT: /analysis
     @mekewe_router.get(
         "/{analysis_method_name}/params",
-        response_model=Dict[str, Dict[str, str | int | float | bool]],
-        description="List all MetaKEGG parameters for the analysis methods available.",
+        response_model=MetaKeggPipelineInputParamsDocs,
+        description="List all MetaKEGG parameters per analysis methods available. ",
         tags=["Analysis Methods"],
     )
     @limiter.limit(f"6/second")
     async def list_available_analysis_parameters(
-        request: Request, analysis_method_name: str
-    ):
-        attributes = {}
-
-        for field_name, field_info in MetaKeggPipelineInputParams.model_fields.items():
-            required = True
-            # Fetch the type name and default value of each param field
-            field_type = field_info.annotation
-            if get_origin(field_type) is Union:
-                required = False
-                field_type = get_args(field_type)[0]
-
-            attributes[field_name] = {"type": field_type.__name__, "required": required}
-            field_default = field_info.default
-            if field_default:
-                attributes[field_name]["default"] = field_default
-        return attributes
+        request: Request, analysis_method_name: Literal[tuple(analyses_method_names)]
+    ) -> MetaKeggPipelineInputParamsDocs:
+        if analysis_method_name not in analyses_method_names:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"There is no analyses method with the name {analysis_method_name}",
+            )
+        return MetaKeggPipelineInputParamsDocs(
+            global_params=get_param_docs(PipelineAsync.__init__),
+            method_specific_params=get_param_docs(
+                MetaKeggPipelineAnalysisMethods[analysis_method_name].value.func
+            ),
+        )
 
     ##ENDPOINT: /pipeline
     @mekewe_router.post(
@@ -147,7 +152,8 @@ def get_api_router(app: FastAPI) -> APIRouter:
     @limiter.limit(f"{config.MAX_PIPELINE_RUNS_PER_HOUR_PER_IP}/hour")
     async def initialize_a_metakegg_pipeline_run_definition(
         request: Request,
-        pipeline_params: Annotated[MetaKeggPipelineInputParams, Query()] = None,
+        pipeline_params: Annotated[MetaKeggPipelineInputParamsValues, Body()],
+        # pipeline_params: Annotated[MetaKeggPipelineInputParamsDocs, Query()] = None,
     ) -> MetaKeggPipelineTicket:
         ticket: MetaKeggPipelineTicket = MetaKeggPipelineStateManager(
             redis_client=redis
@@ -160,7 +166,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         response_model=MetaKeggPipelineDef,
         description="""
         Update the pipeline params of an allready existing pipeline run definition. 
-        The pipeline must not be started via `/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}` allready. 
+        The pipeline must **NOT** be started via `/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}` allready. 
         Only provided params get updated. You dont have to supply all params every PATCH call.""",
         tags=["Pipeline"],
     )
@@ -168,7 +174,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def update_a_metakegg_pipeline_run_definition(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
-        pipeline_params: Annotated[MetaKeggPipelineInputParamsUpdate, Query()] = None,
+        pipeline_params: Annotated[MetaKeggPipelineInputParamsValues, Body()],
     ) -> MetaKeggPipelineDef:
 
         # get current params from db
@@ -216,7 +222,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         )
 
     analysis_method_names_type_hint = Literal[
-        tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethods])
+        tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])
     ]
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/run/{analysis_method_name}

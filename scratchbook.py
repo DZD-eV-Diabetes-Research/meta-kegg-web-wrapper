@@ -183,6 +183,8 @@ def capture_real_time():
 
 
 def get_typehint():
+    from pydantic import BaseModel, Field
+    from pydantic_core import PydanticUndefined
     from typing import (
         Literal,
         Optional,
@@ -195,26 +197,96 @@ def get_typehint():
         get_origin,
         get_type_hints,
     )
+    import inspect
     from metaKEGG import Pipeline
+    import json
 
-    def get_arg_type(annotation: Any, is_optional: bool = False):
+    UNSET_TYPE = List
+    UNSET = []
 
+    class PipelineMethodParamDoc(BaseModel):
+        name: str
+        type: Literal["str", "int", "float", "bool"] = "str"
+        is_list: bool = False
+        required: bool = False
+        default: Optional[
+            str | int | float | List[str] | List[int] | List[float] | None | UNSET_TYPE
+        ]
+
+    class UndefinedEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if obj is None:
+                return "undefined"
+            return super().default(obj)
+
+    def get_param_doc(
+        name: str,
+        annotation: Any,
+        default: Any,
+        is_optional: bool = False,
+        is_list: bool = False,
+    ):
         if get_origin(annotation) == Union:
             # we dont handle Union options. we just take the first option into account
             annotation = get_args(annotation)[0]
-            return get_arg_type(annotation)
+            return get_param_doc(name, annotation, default)
         if get_origin(annotation) == Optional:
-            # we dont handle Union options. we just take the first option into account
-            return get_arg_type(annotation, is_optional=True)
+            annotation = get_args(annotation)[0]
+            return get_param_doc(name, annotation, default, is_optional=True)
+        if get_origin(annotation) == list:
+            annotation = get_args(annotation)[0]
+            return get_param_doc(
+                name, annotation, default, is_optional=True, is_list=True
+            )
+        return PipelineMethodParamDoc(
+            name=name,
+            type=annotation.__name__,
+            required=not is_optional,
+            is_list=is_list,
+            default=default,
+        )
 
-        print("annotation", annotation)
-        get_args(annotation)
-        print("get_origin", get_origin(annotation))
-        print("get_args", get_args(annotation))
+    for name, type_hint in get_type_hints(Pipeline.__init__).items():
+        if name == "return":
+            continue
+        default = UNSET
+        param = inspect.signature(Pipeline.__init__).parameters.get(name)
+        if param and param.default is not inspect.Parameter.empty:
+            default = param.default
+        print("__NAME", name, type_hint)
+        doc = get_param_doc(name, type_hint, default=default)
 
-    for name, type_ in get_type_hints(Pipeline.__init__).items():
-        print("__NAME", name, type_)
-        print(get_arg_type(type_))
+        print(doc.model_dump_json(indent=2))
 
 
-get_typehint()
+def iter_enum():
+    from enum import Enum
+    from metaKEGG import PipelineAsync
+    from functools import partial
+
+    class MetaKeggPipelineMethod(Enum):
+        single_input_genes = partial(PipelineAsync.single_input_genes)
+        single_input_transcripts = partial(PipelineAsync.single_input_transcripts)
+        single_input_genes_bulk_mapping = partial(
+            PipelineAsync.single_input_genes_bulk_mapping
+        )
+        multiple_inputs = partial(PipelineAsync.multiple_inputs)
+        single_input_with_methylation = partial(
+            PipelineAsync.single_input_with_methylation
+        )
+        single_input_with_methylation_quantification = partial(
+            PipelineAsync.single_input_with_methylation_quantification
+        )
+        single_input_with_miRNA = partial(PipelineAsync.single_input_with_miRNA)
+        single_input_with_miRNA_quantification = partial(
+            PipelineAsync.single_input_with_miRNA_quantification
+        )
+        single_input_with_methylation_and_miRNA = partial(
+            PipelineAsync.single_input_with_methylation_and_miRNA
+        )
+
+    for meth in MetaKeggPipelineMethod:
+        print(meth.name)
+
+
+iter_enum()
