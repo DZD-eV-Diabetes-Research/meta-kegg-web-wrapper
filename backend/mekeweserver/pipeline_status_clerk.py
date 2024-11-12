@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 import redis
 from pathlib import Path, PurePath
 import uuid
@@ -104,7 +104,7 @@ class MetaKeggPipelineStateManager:
     ) -> MetaKeggPipelineDef:
         log.info(f"Add pipeline-run with id '{ticket_id}' to queue.")
         pipeline_status = self.get_pipeline_status(ticket_id)
-        
+
         # reset error from previous runs (if existent)...
         pipeline_status.error = None
         pipeline_status.error_traceback = None
@@ -125,13 +125,12 @@ class MetaKeggPipelineStateManager:
         self.redis_client.lpush(self.REDIS_NAME_PIPELINE_QUEUE, ticket_id.hex)
         return pipeline_status
 
-
     def set_pipeline_state_as_running(
         self,
         ticket_id: uuid.UUID,
     ) -> MetaKeggPipelineDef:
         pipeline_status = self.get_pipeline_status(ticket_id)
-        
+
         pipeline_status.state = "running"
         pipeline_status.started_at_utc = datetime.datetime.now(tz=datetime.timezone.utc)
         self.set_pipeline_status(pipeline_status)

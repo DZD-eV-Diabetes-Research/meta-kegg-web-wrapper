@@ -152,9 +152,15 @@ def get_api_router(app: FastAPI) -> APIRouter:
     @limiter.limit(f"{config.MAX_PIPELINE_RUNS_PER_HOUR_PER_IP}/hour")
     async def initialize_a_metakegg_pipeline_run_definition(
         request: Request,
-        pipeline_params: Annotated[MetaKeggPipelineInputParamsValues, Body()],
+        pipeline_params: Annotated[
+            Optional[MetaKeggPipelineInputParamsValues], Body()
+        ] = None,
         # pipeline_params: Annotated[MetaKeggPipelineInputParamsDocs, Query()] = None,
     ) -> MetaKeggPipelineTicket:
+        if pipeline_params is None:
+            pipeline_params = MetaKeggPipelineInputParamsValues(
+                global_params={"input_label": []}, method_specific_params={}
+            )
         ticket: MetaKeggPipelineTicket = MetaKeggPipelineStateManager(
             redis_client=redis
         ).init_new_pipeline_run(pipeline_params)
