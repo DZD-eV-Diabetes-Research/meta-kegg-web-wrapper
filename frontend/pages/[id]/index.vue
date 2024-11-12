@@ -1,6 +1,6 @@
 <template>
+    {{ pipelineStatus }}
     <div>
-        {{ pipelineStatus }}
         <UIBaseCard customTextAlign="left">
             <div id="introductionText">
                 <div id="headline" style="margin: 1% 0%;">
@@ -30,7 +30,18 @@
                     again later</h1>
             </UIBaseCard>
         </div>
-        <UIBaseCard v-if="healthStatus?.healthy" :narrow-width="true">
+        <UIBaseCard v-if="statusError" :narrow-width="true">
+            <div class="statusError">
+                <h3 class="text-4xl">There seems to be an error with the provided Ticket ID</h3>
+                <br>
+                <h3 class="text-4xl">Either it is no longer availabe or there was a typing error</h3>
+                <br>
+                <h3 class="text-4xl">You can either try again or create a new Ticket ID</h3>
+                <br>
+                <UButton label="Create New Ticket ID" variant="outline" color="red" @click="newID" />
+            </div>
+        </UIBaseCard>
+        <UIBaseCard v-else :narrow-width="true">
             <div class="step-box">
                 <h1 class="text-3xl">Step 1: Upload your files</h1>
             </div>
@@ -169,17 +180,26 @@ interface Ticket_ID {
     id: string
 }
 
+const ticket_id = route.params.id
+
+const { data: pipelineStatus, error: statusError } = await useFetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
 const { data: parameters } = await useFetch(`${runtimeConfig.public.baseURL}/api/params`)
-const { data: analysisMethods, error: analysisMethodsError, status: analysisStatus } = await useFetch<AnalysisMethods[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
 
-const ticket_id = route.params.id
+// const parameters = pipelineStatus.value.pipeline_params
+
+const { data: analysisMethods, error: analysisMethodsError, status: analysisStatus } = await useFetch<AnalysisMethods[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
 
 const acceptAGB = ref(false)
 
-const pipelineStatus = ref()
+watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
+    acceptAGB.value = newValue?.length > 0
+}, { immediate: true })
+
+// const pipelineStatus = ref()
 const selectedMethod = ref("single_input_genes")
+
 const formDataCheck = ref(false)
 
 const inputLabel = computed(() => {
@@ -196,7 +216,7 @@ function uncheckedAGB() {
 
 async function printUploadChange(event: Event) {
     const input = event.target as HTMLInputElement
-    
+
     if (input.files && input.files.length > 0) {
         const formData = new FormData()
         formData.append('file', input.files[0])
@@ -275,18 +295,6 @@ async function getStatus() {
 }
 
 
-const formFields = ref(parameters.value);
-
-const formState = ref({});
-
-watchEffect(() => {
-    if (formFields.value) {
-        Object.entries(formFields.value).forEach(([key, field]: [string, any]) => {
-            formState.value[key] = field.default !== undefined ? field.default : null;
-        });
-    }
-});
-
 const accordionItems = ref([
     {
         label: 'Pipeline Parameter Setting',
@@ -309,24 +317,69 @@ function getInputType(fieldType: string): string {
     }
 }
 
+
+
+const formFields = ref(parameters.value);
+const formState = ref({});
+
+onMounted(() => {
+    initializeFormState();
+});
+
+watchEffect(() => {
+    if (formFields.value) {
+        Object.entries(formFields.value).forEach(([key, field]: [string, any]) => {
+            if (!(key in formState.value)) {
+                formState.value[key] = field.default !== undefined ? field.default : null;
+            }
+        });
+    }
+});
+
+function initializeFormState() {
+    if (formFields.value) {
+        Object.entries(formFields.value).forEach(([key, field]: [string, any]) => {
+            formState.value[key] = field.default !== undefined ? field.default : null;
+        });
+    }
+    if (pipelineStatus.value && pipelineStatus.value.pipeline_params) {
+        Object.entries(pipelineStatus.value.pipeline_params).forEach(([key, value]) => {
+            if (key in formState.value) {
+                formState.value[key] = value;
+            }
+        });
+    }
+}
+
 async function handleBlur(fieldName) {
     const missingFields = Object.entries(formFields.value)
-        .filter(([key, field]: [string, any]) => field.required && !formState.value[key])
+        .filter(([key, field]) => field.required && !formState.value[key])
         .map(([key]) => formatLabel(key));
 
     if (missingFields.length > 0) {
         alert(`"${missingFields.join(', ')}" cannot be empty`);
-        formState.value[fieldName] = parameters.value[fieldName].default;
+        formState.value[fieldName] = parameters.value[fieldName]?.default ?? null;
         return;
     }
 
-    await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}?${fieldName}=${formState.value[fieldName]}`, {
-        method: "PATCH"
-    })
+    const valueToSend = formState.value[fieldName];
 
-    getStatus()
-    console.log(`Field ${fieldName} lost focus value = ${formState.value[fieldName]}`, formState.value);
+    try {
+        const url = new URL(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}`);
+        url.searchParams.append(fieldName, valueToSend);
+
+        await $fetch(url.toString(), {
+            method: "PATCH"
+        });
+
+        await getStatus();
+
+    } catch (error) {
+        console.error(`Error updating field ${fieldName}:`, error);
+        alert(`Failed to update ${formatLabel(fieldName)}. Please try again.`);
+    }
 }
+
 
 
 async function downloadFile() {
@@ -347,6 +400,10 @@ async function downloadFile() {
     } catch (error) {
         console.error('Download failed:', error);
     }
+}
+
+function newID() {
+    navigateTo("/")
 }
 
 </script>
@@ -370,5 +427,9 @@ async function downloadFile() {
 
 .custom-hr {
     margin: 2% 0%;
+}
+
+.statusError {
+    color: red;
 }
 </style>
