@@ -1,6 +1,6 @@
 <template>
     <div class="relative">
-        <UButton :label="label" color="primary" @click="triggerFileInput">
+        <UButton :label="label" color="primary" variant="outline">
             <template #trailing>
                 <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
             </template>
@@ -11,23 +11,21 @@
 </template>
 
 <script setup lang="ts">
-const emit = defineEmits(['change'])
-const fileInput = ref(null)
 
-const triggerFileInput = () => {
-    fileInput.value.click()
+interface Props {
+    label: string;
 }
 
-const handleFileChange = (event) => {
-    emit('change', event)
-}
+const props = defineProps<Props>()
 
-defineProps<{
-    label: string
+const emit = defineEmits<{
+    (e: 'change', event: Event): void
 }>()
 
+const fileInput = ref<HTMLInputElement | null>(null)
+
+
+const handleFileChange = (event: Event) => {
+    emit('change', event)
+}
 </script>
-
-<style>
-
-</style>
