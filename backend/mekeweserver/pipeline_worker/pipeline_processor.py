@@ -1,4 +1,5 @@
-from typing import List, Callable, Awaitable, Any, Optional
+from typing import List, Callable, Awaitable, Any, Optional, Type
+from pydantic import BaseModel
 from io import StringIO
 import sys
 from pathlib import Path
@@ -14,6 +15,8 @@ from mekeweserver.model import (
     MetaKeggPipelineAnalysisMethod,
     MetaKeggPipelineDef,
     UNSET,
+    get_param_model,
+    get_param_docs,
 )
 from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 from mekeweserver.pipeline_worker.pipeline_output_catcher import (
@@ -68,11 +71,22 @@ class MetakeggPipelineProcessor:
                     self.pipeline_state_manager.redis_client,
                 )
             ):
-                event_loop.run_until_complete(
-                    analysis_method_func(
-                        **self.pipeline_definition.pipeline_params.method_specific_params
-                    )
+                # validate/filter method params
+                method_params_model: Type[BaseModel] = get_param_model(
+                    method.name,
+                    get_param_docs(analysis_method_func),
                 )
+                # extract only valud params for this method
+                attr = {}
+                for attr_name, field_info in method_params_model.model_fields.items():
+                    attr[attr_name] = (
+                        self.pipeline_definition.pipeline_params.method_specific_params[
+                            attr_name
+                        ]
+                    )
+                # create a model instance to validate the inputs
+                method_params = method_params_model(**attr)
+                event_loop.run_until_complete(analysis_method_func(**method_params))
         except Exception as e:
             self.pipeline_definition = self.handle_exception(e)
             return self.pipeline_definition

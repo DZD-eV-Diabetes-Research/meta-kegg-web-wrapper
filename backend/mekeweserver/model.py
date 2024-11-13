@@ -189,7 +189,7 @@ class MetaKeggPipelineInputParamsDesc(Enum):
     log2fc_column = "Column name for log2fc values in the sheet_name_genes"
     count_threshold = "Minimum number of genes per pathway, for pathway to be drawn."
     pathway_pvalue = "Raw p-value threshold for the pathways"
-    input_label = "Input label or list of labels for multiple inputs"
+    input_label = "TODO: @Michail: Is this really a global param or only used for 'multiple_inputs'? (see https://github.com/dife-bioinformatics/metaKEGG/blob/master/src/metaKEGG/modules/pipeline_async.py#L196) Input label or list of labels for multiple inputs"
     folder_extension = "Folder extension to be appended to the default naming scheme. If None and default folder exists, will overwrite folder"
     methylation_path = "Path to methylation data (Excel , CSV or TSV format)"
     methylation_pvalue = "Column name for methylation p-value"
@@ -216,7 +216,9 @@ class MetaKeggPipelineInputParamsDocsTypeOverride(Enum):
 
 
 def get_param_model(
-    method_name: str, param_docs: List[MetaKeggPipelineInputParamDocItem]
+    method_name: str,
+    param_docs: List[MetaKeggPipelineInputParamDocItem],
+    make_all_params_optional: bool = False,
 ) -> Type[BaseModel]:
     params = {}
     """from pydantic create_model docs:
@@ -229,9 +231,15 @@ def get_param_model(
         type_annotation = types_map[par_doc.type]
         if par_doc.is_list:
             type_annotation = List[type_annotation]
-        if not par_doc.required:
+        if not par_doc.required or make_all_params_optional:
             type_annotation = Optional[type_annotation]
-        if par_doc.default == UNSET:
+        if make_all_params_optional:
+            default = None if par_doc.default == UNSET else par_doc.default
+            params[par_doc.name] = (
+                type_annotation,
+                Field(default=default, description=par_doc.description),
+            )
+        elif par_doc.default == UNSET:
             params[par_doc.name] = (
                 type_annotation,
                 Field(description=par_doc.description),
@@ -336,10 +344,18 @@ def get_param_docs(
 GlobalParamModel: Type[BaseModel] = get_param_model(
     "Global", get_param_docs(PipelineAsync.__init__)
 )
+GlobalParamModelUpdate: Type[BaseModel] = get_param_model(
+    "Global", get_param_docs(PipelineAsync.__init__), make_all_params_optional=True
+)
 
 
 class MetaKeggPipelineInputParamsValues(BaseModel):
     global_params: GlobalParamModel = Field()
+    method_specific_params: Dict[str, Any] = Field(default_factory=dict)
+
+
+class MetaKeggPipelineInputParamsValuesUpdate(BaseModel):
+    global_params: GlobalParamModelUpdate = Field()
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
 

@@ -50,9 +50,11 @@ from mekeweserver.model import (
     MetaKeggPipelineInputParamsDesc,
     MetaKeggPipelineAnalysisMethods,
     MetaKeggPipelineInputParamsValues,
+    MetaKeggPipelineInputParamsValuesUpdate,
     get_param_docs,
     get_param_model,
     GlobalParamModel,
+    GlobalParamModelUpdate,
 )
 
 
@@ -180,7 +182,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def update_a_metakegg_pipeline_run_definition(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
-        pipeline_params: Annotated[MetaKeggPipelineInputParamsValues, Body()],
+        pipeline_params: Annotated[MetaKeggPipelineInputParamsValuesUpdate, Body()],
     ) -> MetaKeggPipelineDef:
 
         # get current params from db
@@ -199,10 +201,12 @@ def get_api_router(app: FastAPI) -> APIRouter:
             )
 
         # Update the current state with new params that where supplied
-        for key, val in pipeline_params.model_dump(
+        for key, val in pipeline_params.global_params.model_dump(
             exclude_unset=True, exclude_defaults=True
         ).items():
-            setattr(pipeline_status.pipeline_params, key, val)
+            setattr(pipeline_status.pipeline_params.global_params, key, val)
+        for key, val in pipeline_params.method_specific_params.items():
+            setattr(pipeline_status.pipeline_params.method_specific_params, key, val)
 
         # Save the new state to the db
         MetaKeggPipelineStateManager(redis_client=redis).set_pipeline_status(
