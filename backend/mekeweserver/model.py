@@ -12,6 +12,7 @@ from typing import (
     Any,
     Dict,
 )
+
 from functools import partial
 import inspect
 from typing_extensions import Self
@@ -253,6 +254,23 @@ def _get_param_doc(
             default=default,
             is_override=True,
         )
+
+    if (
+        get_origin(annotation) == Union
+        and len(list(get_args(annotation))) == 2
+        and get_args(annotation)[1] == type(None)
+    ):
+        # We have an "Optional" annotation
+        # Union and len(get_args(annotation)) == 2 and get_args(annotation)[1] is None == Optional
+        annotation = get_args(annotation)[0]
+        return _get_param_doc(
+            name,
+            annotation,
+            default,
+            is_optional=True,
+            is_list=is_list,
+            is_override=is_override,
+        )
     if get_origin(annotation) == Union:
         # we dont handle Union options. we just take the first option into account
         annotation = get_args(annotation)[0]
@@ -264,23 +282,13 @@ def _get_param_doc(
             is_list=is_list,
             is_override=is_override,
         )
-    if get_origin(annotation) == Optional:
-        annotation = get_args(annotation)[0]
-        return _get_param_doc(
-            name,
-            annotation,
-            default,
-            is_optional=True,
-            is_list=is_list,
-            is_override=is_override,
-        )
     if get_origin(annotation) == list:
         annotation = get_args(annotation)[0]
         return _get_param_doc(
             name,
             annotation,
             default,
-            is_optional=True,
+            is_optional=is_optional,
             is_list=True,
             is_override=is_override,
         )
