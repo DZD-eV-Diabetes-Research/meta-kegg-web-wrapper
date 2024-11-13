@@ -1,5 +1,8 @@
 <template>
     {{ pipelineStatus }}
+    <br>
+    <br>
+    parameters: {{ parameters }}
     <div>
         <UIBaseCard customTextAlign="left">
             <div id="introductionText">
@@ -69,27 +72,49 @@
             <h1 v-if="analysisStatus === 'pending'">Loading</h1>
             <div v-else class="select-container">
                 <USelect v-model="selectedMethod" :options="analysisMethods" option-attribute="display_name"
-                    valueAttribute="name" style="margin-bottom: 1%" />
+                    valueAttribute="name" style="margin-bottom: 1%" @change="getParams" />
             </div>
             <hr class="custom-hr">
             <div class="step-box">
                 <h1 class="text-3xl">Step 3: (Optional) Setting Pipeline Parameters</h1>
             </div>
             <div style="text-align: left">
-                <UAccordion v-if="formFields" :items="accordionItems">
+                <UAccordion v-if="globalParams.length > 0 || methodSpecificParams.length > 0" :items="accordionItems">
                     <template #item="{ item }">
                         <div
                             style="border: solid; border-color: #d3f4e1; border-radius: 1%; padding: 2%; background-color: #f6fdf9;">
                             <UForm :state="formState">
-                                <div v-for="(field, key) in formFields" :key="key">
-                                    <UFormGroup :label="formatLabel(key)" :required="field.required">
+                                <div v-for="field in globalParams" :key="field.name">
+                                    <UFormGroup
+                                        v-if="field.name !== 'input_label' || selectedMethod === 'multiple_inputs'"
+                                        :label="formatLabel(field.name)" :required="field.required">
+                                        <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
+                                            v-model="formState[field.name]"
+                                            :placeholder="field.default?.toString() || ''"
+                                            :type="getInputType(field.type)" @blur="handleBlur(field.name)" />
+                                        <UInput
+                                            v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
+                                            v-model="formState[field.name]"
+                                            placeholder="Enter items separated by commas"
+                                            @blur="handleBlur(field.name)" />
+                                        <UToggle v-else-if="field.type === 'bool'" v-model="formState[field.name]"
+                                            @blur="handleBlur(field.name)" />
+                                        <UTextarea v-else-if="field.type === 'List'" v-model="formState[field.name]"
+                                            placeholder="Enter items separated by commas"
+                                            @blur="handleBlur(field.name)" />
+                                    </UFormGroup>
+                                </div>
+                                <div v-for="field in methodSpecificParams" :key="field.name">
+                                    <UFormGroup :label="formatLabel(field.name)" :required="field.required">
                                         <UInput v-if="['str', 'int', 'float'].includes(field.type)"
-                                            v-model="formState[key]" :placeholder="field.default?.toString() || ''"
-                                            :type="getInputType(field.type)" @blur="handleBlur(key)" />
-                                        <UToggle v-else-if="field.type === 'bool'" v-model="formState[key]"
-                                            @blur="handleBlur(key)" />
-                                        <UTextarea v-else-if="field.type === 'List'" v-model="formState[key]"
-                                            placeholder="Enter items separated by commas" @blur="handleBlur(key)" />
+                                            v-model="formState[field.name]"
+                                            :placeholder="field.default?.toString() || ''"
+                                            :type="getInputType(field.type)" @blur="handleBlur(field.name)" />
+                                        <UToggle v-else-if="field.type === 'bool'" v-model="formState[field.name]"
+                                            @blur="handleBlur(field.name)" />
+                                        <UTextarea v-else-if="field.type === 'List'" v-model="formState[field.name]"
+                                            placeholder="Enter items separated by commas"
+                                            @blur="handleBlur(field.name)" />
                                     </UFormGroup>
                                 </div>
                             </UForm>
@@ -182,10 +207,12 @@ interface Ticket_ID {
 
 const ticket_id = route.params.id
 
+const selectedMethod = ref("single_input_genes")
+
 const { data: pipelineStatus, error: statusError } = await useFetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
-const { data: parameters } = await useFetch(`${runtimeConfig.public.baseURL}/api/params`)
+const { data: parameters } = await useFetch(`${runtimeConfig.public.baseURL}/api/${selectedMethod.value}/params`)
 
 // const parameters = pipelineStatus.value.pipeline_params
 
@@ -198,7 +225,6 @@ watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
 }, { immediate: true })
 
 // const pipelineStatus = ref()
-const selectedMethod = ref("single_input_genes")
 
 const formDataCheck = ref(false)
 
@@ -318,30 +344,59 @@ function getInputType(fieldType: string): string {
 }
 
 
+const globalParams = ref([])
+const methodSpecificParams = ref([]);
 
-const formFields = ref(parameters.value);
 const formState = ref({});
 
 onMounted(() => {
-    initializeFormState();
-});
-
-watchEffect(() => {
-    if (formFields.value) {
-        Object.entries(formFields.value).forEach(([key, field]: [string, any]) => {
-            if (!(key in formState.value)) {
-                formState.value[key] = field.default !== undefined ? field.default : null;
-            }
-        });
+    if (parameters.value) {
+        globalParams.value = parameters.value.global_params || [];
+        methodSpecificParams.value = parameters.value.method_specific_params || [];
+        initializeFormState();
     }
 });
+
+onMounted(async () => {
+    if (selectedMethod.value) {
+        await updateFormForMethod(selectedMethod.value);
+    }
+});
+
+watch(selectedMethod, async (newMethod) => {
+    if (newMethod) {
+        await updateFormForMethod(newMethod);
+    }
+});
+
+async function updateFormForMethod(method) {
+    try {
+        const { data } = await useFetch(`${runtimeConfig.public.baseURL}/api/${method}/params`);
+
+        if (data.value) {
+            globalParams.value = data.value.global_params || [];
+            methodSpecificParams.value = data.value.method_specific_params || [];
+            initializeFormState();
+        }
+    } catch (error) {
+        console.error('Error fetching parameters for method:', error);
+    }
+}
 
 function initializeFormState() {
-    if (formFields.value) {
-        Object.entries(formFields.value).forEach(([key, field]: [string, any]) => {
-            formState.value[key] = field.default !== undefined ? field.default : null;
-        });
-    }
+    formState.value = {};
+
+    const allParams = [...globalParams.value, ...methodSpecificParams.value];
+    allParams.forEach(field => {
+        if (field.name === 'input_label' && selectedMethod.value !== 'multiple_inputs') {
+            formState.value[field.name] = ["null"];
+        } else if (field.is_list) {
+            formState.value[field.name] = field.default || [];
+        } else {
+            formState.value[field.name] = field.default !== undefined ? field.default : null;
+        }
+    });
+
     if (pipelineStatus.value && pipelineStatus.value.pipeline_params) {
         Object.entries(pipelineStatus.value.pipeline_params).forEach(([key, value]) => {
             if (key in formState.value) {
@@ -352,24 +407,60 @@ function initializeFormState() {
 }
 
 async function handleBlur(fieldName) {
-    const missingFields = Object.entries(formFields.value)
-        .filter(([key, field]) => field.required && !formState.value[key])
-        .map(([key]) => formatLabel(key));
+    const allParams = [...globalParams.value, ...methodSpecificParams.value];
+    const field = allParams.find(f => f.name === fieldName);
+
+    if (fieldName === 'input_label' && selectedMethod.value !== 'multiple_inputs') {
+        formState.value[fieldName] = ["null"];
+        return;
+    }
+
+    if (field.is_list && typeof formState.value[fieldName] === 'string') {
+        formState.value[fieldName] = formState.value[fieldName].split(',').map(item => item.trim()).filter(Boolean);
+    }
+
+    const missingFields = allParams
+        .filter(field => {
+            if (field.required) {
+                if (field.type === 'bool') {
+                    return formState.value[field.name] === undefined;
+                } else if (field.is_list) {
+                    return Array.isArray(formState.value[field.name]) && formState.value[field.name].length === 0;
+                } else {
+                    return !formState.value[field.name] && formState.value[field.name] !== false;
+                }
+            }
+            return false;
+        })
+        .map(field => formatLabel(field.name));
 
     if (missingFields.length > 0) {
-        alert(`"${missingFields.join(', ')}" cannot be empty`);
-        formState.value[fieldName] = parameters.value[fieldName]?.default ?? null;
+        alert(`"${missingFields.join(', ')}" must be set`);
+        formState.value[fieldName] = field?.default ?? (field.is_list ? [] : null);
         return;
     }
 
     const valueToSend = formState.value[fieldName];
 
     try {
-        const url = new URL(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}`);
-        url.searchParams.append(fieldName, valueToSend);
+        const url = `${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}`;
 
-        await $fetch(url.toString(), {
-            method: "PATCH"
+        const isGlobalParam = globalParams.value.some(param => param.name === fieldName);
+
+        const body = {
+            global_params: {},
+            method_specific_params: {}
+        };
+
+        if (isGlobalParam) {
+            body.global_params[fieldName] = valueToSend;
+        } else {
+            body.method_specific_params[fieldName] = valueToSend;
+        }
+
+        await $fetch(url, {
+            method: "PATCH",
+            body: body
         });
 
         await getStatus();
@@ -380,8 +471,17 @@ async function handleBlur(fieldName) {
     }
 }
 
-
-
+watch(selectedMethod, (newMethod) => {
+    if (newMethod !== 'multiple_inputs') {
+        formState.value.input_label = ["null"];
+    } else {
+        const inputLabelField = globalParams.value.find(param => param.name === 'input_label');
+        if (!formState.value.hasOwnProperty('input_label') ||
+            (Array.isArray(formState.value.input_label) && formState.value.input_label[0] === "null")) {
+            formState.value.input_label = inputLabelField?.default || [];
+        }
+    }
+});
 async function downloadFile() {
     try {
         const downloadedFile = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/result`)
@@ -405,6 +505,19 @@ async function downloadFile() {
 function newID() {
     navigateTo("/")
 }
+
+async function getParams() {
+    await updateFormForMethod(selectedMethod.value);
+    await getStatus();
+}
+
+watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
+    if (newValue && newValue.length > 0) {
+        formDataCheck.value = true
+    } else {
+        formDataCheck.value = false
+    }
+}, { deep: true, immediate: true })
 
 </script>
 
