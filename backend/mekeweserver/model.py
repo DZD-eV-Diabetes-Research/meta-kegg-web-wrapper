@@ -124,7 +124,16 @@ class MetaKeggPipelineInputParamDocItem(BaseModel):
     is_list: bool = False
     required: bool = False
     default: Optional[
-        str | int | float | List[str] | List[int] | List[float] | None | UNSET_TYPE
+        str
+        | int
+        | float
+        | bool
+        | List[str]
+        | List[int]
+        | List[float]
+        | List[bool]
+        | None
+        | UNSET_TYPE
     ]
     description: Optional[str] = None
 
