@@ -17,10 +17,6 @@
                     amet.
                     <NuxtLink style="color: blue;" to="/help">Help</NuxtLink>
                 </p>
-                <div id="ticketBox" style="text-align: center; margin: 1% 0%">
-                    <h1 class="text-3xl" v-if="ticket_id">Your Ticket ID for this session is: {{ ticket_id }}
-                    </h1>
-                </div>
             </div>
         </UIBaseCard>
         <div v-if="healthFetchError || !healthStatus?.healthy">
@@ -31,16 +27,24 @@
         </div>
         <UIBaseCard v-if="statusError" :narrow-width="true">
             <div class="statusError">
-                <h3 class="text-4xl">The Ticket ID could not be found</h3>
+                <h3 class="text-4xl">Your MetaKegg url could not be found</h3>
                 <br>
                 <h3 class="text-4xl">Maybe it has already expired</h3>
                 <br>
-                <h3 class="text-4xl">The current expiration time is: {{ config.pipeline_ticket_expire_time_sec /  3600 }} hours</h3>
+                <h3 class="text-4xl">The current expiration time is: {{ config.pipeline_ticket_expire_time_sec / 3600 }}
+                    hours</h3>
                 <br>
                 <UButton label="Create New Ticket ID" variant="outline" color="red" @click="newID" />
             </div>
         </UIBaseCard>
         <UIBaseCard v-else :narrow-width="true">
+            <div class="step-box">
+                <h1 class="text-3xl">Step 0: Your MetaKegg-url</h1>
+                <div id="ticketBox" style="text-align: center; margin: 1% 0%">
+                    <h1 class="text-2xl" v-if="ticket_id">{{ url }}</h1>
+                </div>
+            </div>
+            <hr class="custom-hr">
             <div class="step-box">
                 <h1 class="text-3xl">Step 1: Upload your files</h1>
             </div>
@@ -72,7 +76,7 @@
             </div>
             <hr class="custom-hr">
             <div class="step-box">
-                <h1 class="text-3xl">Step 3: (Optional) Setting Pipeline Parameters</h1>
+                <h1 class="text-3xl">Step 3: (Optional) Pipeline Parameters</h1>
             </div>
             <div style="text-align: left">
                 <UAccordion v-if="globalParams.length > 0 || methodSpecificParams.length > 0" :items="accordionItems">
@@ -172,7 +176,7 @@
                     <p style="margin-bottom: 0.5%;">The monkeys are busy in the background please be patient</p>
                     <UProgress animation="carousel" />
                 </div>
-                <div v-if="!isLoading && pipelineStatus.state ==='success'">
+                <div v-if="!isLoading && pipelineStatus.state === 'success'">
                     <UButton @click="downloadFile" variant="outline" label="Your File">
                         <template #trailing>
                             <UIcon name="i-heroicons-cloud-arrow-down" class="w-5 h-5" />
@@ -201,7 +205,7 @@
 <script setup lang="ts">
 
 const route = useRoute()
-
+const url = useRequestURL()
 const myTestAKAStart = ref(true)
 const totalPlaces = ref(30)
 const currentPlace = ref(30)
@@ -504,8 +508,6 @@ async function handleBlur(fieldName) {
     });
 
     const valueToSend = formState.value[fieldName];
-    console.log("MY VALUE IS " + valueToSend);
-    
 
     try {
         const url = `${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}`;
