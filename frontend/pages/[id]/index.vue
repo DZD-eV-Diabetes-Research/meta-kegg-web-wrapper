@@ -1,8 +1,4 @@
 <template>
-    {{ pipelineStatus }}
-    <br>
-    <br>
-    {{ pipelineStatus.pipeline_params }}
     <div>
         <UIBaseCard customTextAlign="left">
             <div id="introductionText">
@@ -176,7 +172,7 @@
                     <p style="margin-bottom: 0.5%;">The monkeys are busy in the background please be patient</p>
                     <UProgress animation="carousel" />
                 </div>
-                <div v-if="!isLoading && downloadStatus">
+                <div v-if="!isLoading && pipelineStatus.state ==='success'">
                     <UButton @click="downloadFile" variant="outline" label="Your File">
                         <template #trailing>
                             <UIcon name="i-heroicons-cloud-arrow-down" class="w-5 h-5" />
@@ -188,11 +184,12 @@
                 <h1 class="text-3xl font-bold" style="color: red; margin: 1% 0%">There seems to be an error: {{
                     errorMessage }}
                 </h1>
-
                 <UAccordion v-if="errorMessageDetail" variant="outline" size="xl" color="red"
                     :items="[{ label: 'Detailed error', content: `${errorMessageDetail}` }]">
-                    <template #errorContent>
-                        <p style="color: red;">{{ errorMessageDetail }}</p>
+                    <template #item="{ item }">
+                        <div style="text-align: left;">
+                            <p style="color: red;" v-html="item.content" />
+                        </div>
                     </template>
                 </UAccordion>
             </div>
@@ -356,7 +353,7 @@ async function startPipeline() {
 
         if (pipelineStatus.value.error) {
             errorMessage.value = pipelineStatus.value.error
-            errorMessageDetail.value = pipelineStatus.value.error_traceback
+            errorMessageDetail.value = pipelineStatus.value.error_traceback.replace(/\n/g, `<br>`)
         }
 
 
@@ -507,6 +504,8 @@ async function handleBlur(fieldName) {
     });
 
     const valueToSend = formState.value[fieldName];
+    console.log("MY VALUE IS " + valueToSend);
+    
 
     try {
         const url = `${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}`;
