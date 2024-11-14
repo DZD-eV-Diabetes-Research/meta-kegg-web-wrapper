@@ -274,8 +274,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
         if status.state not in ["initialized"]:
             current = redis.get("TEST_QUEUE_KEY")
             if current is None:
-                redis.set("TEST_QUEUE_KEY", 40)
-            elif current > 0:
+                current = redis.set("TEST_QUEUE_KEY", 40)
+            current = int(current)
+            if current > 0:
                 redis.set("TEST_QUEUE_KEY", current - 1)
                 status.state = "queued"
                 status.place_in_queue = current
