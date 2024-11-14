@@ -31,11 +31,11 @@
         </div>
         <UIBaseCard v-if="statusError" :narrow-width="true">
             <div class="statusError">
-                <h3 class="text-4xl">There seems to be an error with the provided Ticket ID</h3>
+                <h3 class="text-4xl">The Ticket ID could not be found</h3>
                 <br>
-                <h3 class="text-4xl">Either it is no longer availabe or there was a typing error</h3>
+                <h3 class="text-4xl">Maybe it has already expired</h3>
                 <br>
-                <h3 class="text-4xl">You can either try again or create a new Ticket ID</h3>
+                <h3 class="text-4xl">The current expiration time is: {{ config.pipeline_ticket_expire_time_sec /  3600 }} hours</h3>
                 <br>
                 <UButton label="Create New Ticket ID" variant="outline" color="red" @click="newID" />
             </div>
