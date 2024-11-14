@@ -76,7 +76,6 @@ class PipelineWorker(Process):
                     raise e
                 # traceback.format_exception(e)
             else:
-                print("RESET")
                 redis_client.set(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 0)
             time.sleep(self.tick_pause_sec)
         log.info("Exiting MetaKegg Pipeline Processing Worker.")
