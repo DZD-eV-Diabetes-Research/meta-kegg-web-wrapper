@@ -2,7 +2,7 @@
     {{ pipelineStatus }}
     <br>
     <br>
-    parameters: {{ parameters }}
+    {{ pipelineStatus.pipeline_params }}
     <div>
         <UIBaseCard customTextAlign="left">
             <div id="introductionText">
@@ -87,34 +87,45 @@
                                 <div v-for="field in globalParams" :key="field.name">
                                     <UFormGroup
                                         v-if="field.name !== 'input_label' || selectedMethod === 'multiple_inputs'"
-                                        :label="formatLabel(field.name)" :required="field.required">
+                                        :label="formatLabel(field.name)" :required="field.required"
+                                        :error="formState[`${field.name}_error`]">
                                         <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
                                             v-model="formState[field.name]"
                                             :placeholder="field.default?.toString() || ''"
-                                            :type="getInputType(field.type)" @blur="handleBlur(field.name)" />
+                                            :type="getInputType(field.type)" @blur="handleBlur(field.name)"
+                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
                                         <UInput
                                             v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
                                             v-model="formState[field.name]"
-                                            placeholder="Enter items separated by commas"
-                                            @blur="handleBlur(field.name)" />
+                                            placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
+                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
                                         <UToggle v-else-if="field.type === 'bool'" v-model="formState[field.name]"
                                             @blur="handleBlur(field.name)" />
                                         <UTextarea v-else-if="field.type === 'List'" v-model="formState[field.name]"
-                                            placeholder="Enter items separated by commas"
-                                            @blur="handleBlur(field.name)" />
+                                            placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
+                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
                                     </UFormGroup>
                                 </div>
                                 <div v-for="field in methodSpecificParams" :key="field.name">
-                                    <UFormGroup :label="formatLabel(field.name)" :required="field.required">
-                                        <UInput v-if="['str', 'int', 'float'].includes(field.type)"
+                                    <UFormGroup
+                                        v-if="field.name !== 'input_label' || selectedMethod === 'multiple_inputs'"
+                                        :label="formatLabel(field.name)" :required="field.required"
+                                        :error="formState[`${field.name}_error`]">
+                                        <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
                                             v-model="formState[field.name]"
                                             :placeholder="field.default?.toString() || ''"
-                                            :type="getInputType(field.type)" @blur="handleBlur(field.name)" />
+                                            :type="getInputType(field.type)" @blur="handleBlur(field.name)"
+                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
+                                        <UInput
+                                            v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
+                                            v-model="formState[field.name]"
+                                            placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
+                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
                                         <UToggle v-else-if="field.type === 'bool'" v-model="formState[field.name]"
                                             @blur="handleBlur(field.name)" />
                                         <UTextarea v-else-if="field.type === 'List'" v-model="formState[field.name]"
-                                            placeholder="Enter items separated by commas"
-                                            @blur="handleBlur(field.name)" />
+                                            placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
+                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
                                     </UFormGroup>
                                 </div>
                             </UForm>
@@ -125,6 +136,9 @@
             <hr class="custom-hr">
             <div class="step-box">
                 <h1 class="text-3xl">Step 4: Start the Pipeline</h1>
+            </div>
+            <div v-if="requiredFieldsError" class="submit-error-message">
+                {{ requiredFieldsError }}
             </div>
             <UButton @click="startPipeline">Start run</UButton>
             <hr class="custom-hr">
@@ -264,15 +278,50 @@ const isLoading = ref(false)
 const pipelineStart = ref(false)
 const downloadStatus = ref(false)
 
+const requiredFieldsError = ref('')
+
+function checkRequiredFields() {
+    const allParams = [...globalParams.value, ...methodSpecificParams.value]
+    const emptyRequiredFields = allParams.filter(field => {
+        if (field.required) {
+            if (field.type === 'bool') {
+                return formState.value[field.name] === undefined
+            } else if (field.is_list) {
+                return Array.isArray(formState.value[field.name]) && formState.value[field.name].length === 0
+            } else {
+                return !formState.value[field.name] && formState.value[field.name] !== false
+            }
+        }
+        return false
+    })
+
+    if (emptyRequiredFields.length > 0) {
+        requiredFieldsError.value = `Required field(s) cannot be empty when submitting the form.`
+        return false
+    }
+
+    requiredFieldsError.value = ''
+    return true
+}
+
 async function startPipeline() {
     downloadStatus.value = false
     pipelineStart.value = true
     isLoading.value = true
     errorMessage.value = ""
     errorMessageDetail.value = ""
+    requiredFieldsError.value = ""
 
     if (formDataCheck.value === false) {
         errorMessage.value = "You need to upload a file"
+        isLoading.value = false
+        pipelineStart.value = false
+        return
+    }
+
+    if (!checkRequiredFields()) {
+        isLoading.value = false
+        pipelineStart.value = false
         return
     }
 
@@ -431,22 +480,21 @@ async function handleBlur(fieldName) {
                 }
             }
             return false;
-        })
-        .map(field => formatLabel(field.name));
+        });
 
-    if (missingFields.length > 0) {
-        alert(`"${missingFields.join(', ')}" must be set`);
-        formState.value[fieldName] = field?.default ?? (field.is_list ? [] : null);
-        return;
+    missingFields.forEach(field => {
+        formState.value[`${field.name}_error`] = `${formatLabel(field.name)} cannot be empty`;
+    });
+
+    if (!missingFields.some(f => f.name === fieldName)) {
+        formState.value[`${fieldName}_error`] = null;
     }
 
     const valueToSend = formState.value[fieldName];
 
     try {
         const url = `${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}`;
-
         const isGlobalParam = globalParams.value.some(param => param.name === fieldName);
-
         const body = {
             global_params: {},
             method_specific_params: {}
@@ -464,10 +512,9 @@ async function handleBlur(fieldName) {
         });
 
         await getStatus();
-
     } catch (error) {
         console.error(`Error updating field ${fieldName}:`, error);
-        alert(`Failed to update ${formatLabel(fieldName)}. Please try again.`);
+        formState.value[`${fieldName}_error`] = `Failed to update ${formatLabel(fieldName)}. Please try again.`;
     }
 }
 
@@ -544,5 +591,17 @@ watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
 
 .statusError {
     color: red;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.submit-error-message {
+    color: red;
+    margin-bottom: 10px;
+    font-weight: bold;
 }
 </style>
