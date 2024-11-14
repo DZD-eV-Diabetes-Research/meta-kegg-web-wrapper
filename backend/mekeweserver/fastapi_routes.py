@@ -206,7 +206,8 @@ def get_api_router(app: FastAPI) -> APIRouter:
         ).items():
             setattr(pipeline_status.pipeline_params.global_params, key, val)
         for key, val in pipeline_params.method_specific_params.items():
-            setattr(pipeline_status.pipeline_params.method_specific_params, key, val)
+            pipeline_status.pipeline_params.method_specific_params[key] = val
+            
 
         # Save the new state to the db
         MetaKeggPipelineStateManager(redis_client=redis).set_pipeline_status(

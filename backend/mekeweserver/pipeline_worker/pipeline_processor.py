@@ -87,7 +87,7 @@ class MetakeggPipelineProcessor:
                     )
                 # create a model instance to validate the inputs
                 method_params = method_params_model(**attr)
-                event_loop.run_until_complete(analysis_method_func(**method_params))
+                event_loop.run_until_complete(analysis_method_func(**method_params.model_dump()))
         except Exception as e:
             self.pipeline_definition = self.handle_exception(e)
             return self.pipeline_definition
