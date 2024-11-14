@@ -105,6 +105,7 @@ def run_server(env: Dict = None):
 
     log.info("Start background MetaKegg Pipeline Processor worker...")
     worker_process = PipelineWorker(env=env)
+
     atexit.register(worker_process.stop_event.set)
     worker_process.start()
 
@@ -127,8 +128,11 @@ def run_server(env: Dict = None):
     )
     dump_open_api_spec(app)
     uvicorn_server = uvicorn.Server(config=uvicorn_config)
-
-    event_loop.run_until_complete(uvicorn_server.serve())
+    try:
+        event_loop.run_until_complete(uvicorn_server.serve())
+    except:
+        worker_process.stop_event.set
+        raise
 
 
 if __name__ == "__main__":

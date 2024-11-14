@@ -194,7 +194,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         )
 
         # check if we still can update the pipeline params of if the pipeline is allready triggered
-        if pipeline_status.state in ["queued","running","expired"]:
+        if pipeline_status.state in ["queued", "running", "expired"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Pipeline is not in an updatable state",
@@ -202,12 +202,11 @@ def get_api_router(app: FastAPI) -> APIRouter:
 
         # Update the current state with new params that where supplied
         for key, val in pipeline_params.global_params.model_dump(
-            exclude_unset=True, exclude_defaults=True
+            exclude_unset=True
         ).items():
             setattr(pipeline_status.pipeline_params.global_params, key, val)
         for key, val in pipeline_params.method_specific_params.items():
             pipeline_status.pipeline_params.method_specific_params[key] = val
-            
 
         # Save the new state to the db
         MetaKeggPipelineStateManager(redis_client=redis).set_pipeline_status(

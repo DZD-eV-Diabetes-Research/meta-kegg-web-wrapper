@@ -15,7 +15,59 @@ from utils import (
 )
 
 
+def test_metadata_endpoints():
+    res = req(
+        "/api/analysis",
+        method="get",
+    )
+    assert isinstance(res, list)
+    assert len(res) > 3
+    for method in res:
+        dict_must_contain(
+            method,
+            required_keys=["name", "display_name", "desc"],
+            exception_dict_identifier=f"method info for '{method}'",
+        )
+        res_params = req(
+            f"/api/{method['name']}/params",
+            method="get",
+        )
+        dict_must_contain(
+            res_params,
+            required_keys=["global_params", "method_specific_params"],
+            exception_dict_identifier=f"params for method '{method['name']}'",
+        )
+        assert (
+            len(res_params["global_params"]) > 3
+        ), f"Oh no 'global_params' is to short: {res_params['global_params']}"
+    # config
+    res = req(
+        "/config",
+        method="get",
+    )
+    dict_must_contain(
+        res,
+        required_keys_and_val={
+            "contact_email": "test@blop.de",
+            "bug_report_email": "test@blop.de",
+        },
+        required_keys=["terms_and_conditions", "pipeline_ticket_expire_time_sec"],
+        exception_dict_identifier=f"client config",
+    )
+    # info-links
+    res = req(
+        "/info-links",
+        method="get",
+    )
+    dict_must_contain(
+        res[0],
+        required_keys_and_val={"title": "link1", "link": "https://doi.org/12345"},
+        exception_dict_identifier=f"link list",
+    )
+
+
 def test_single_input_gene_pipeline_run():
+
     res = req(
         "/api/pipeline",
         method="post",
@@ -134,4 +186,5 @@ def test_single_input_gene_pipeline_run():
 
 
 def run_all_tests_pipeline_run():
+    test_metadata_endpoints()
     test_single_input_gene_pipeline_run()

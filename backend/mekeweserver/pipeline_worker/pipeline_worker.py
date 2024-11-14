@@ -50,22 +50,34 @@ class PipelineWorker(Process):
                 self._process_next_deletable_pipeline(pipeline_state_manager)
                 self._process_next_abandoned_pipeline_def(pipeline_state_manager)
             except Exception as e:
+                exception_count: int = 99999
                 try:
                     exception_count = int(
                         redis_client.get(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY)
                     )
                 except redis.ConnectionError:
+                    print("REDIS OFFLINE")
                     exception_count = 99999
                 if (
                     exception_count
                     < config.RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES
                 ):
+                    print("exception_count", exception_count)
                     log.error(e, exc_info=True)
-                    redis_client.incr(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 1)
+                    try:
+                        print("INCREASE", exception_count)
+                        exception_count = redis_client.incr(
+                            self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 1
+                        )
+                        print("INCREASED", exception_count)
+                    except:
+                        raise e
                 else:
                     raise e
                 # traceback.format_exception(e)
-            redis_client.set(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 0)
+            else:
+                print("RESET")
+                redis_client.set(self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 0)
             time.sleep(self.tick_pause_sec)
         log.info("Exiting MetaKegg Pipeline Processing Worker.")
 

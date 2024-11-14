@@ -289,4 +289,19 @@ def iter_enum():
         print(meth.name)
 
 
-iter_enum()
+def pydantic_exclude_set_defaults():
+    from pydantic import BaseModel, Field
+
+    class Test(BaseModel):
+        f1: str = Field(default="path1")
+        f2: str = Field(default="path2")
+        f3: str = Field(default="path3")
+
+    t = Test(f1="test")
+    t.f2 = "path2"
+    print("EXCULDE UNSET", t.model_dump(exclude_unset=True))
+    print("EXCULDE DEFAULTS", t.model_dump(exclude_defaults=True))
+    print("EXCULDE BOTH", t.model_dump(exclude_defaults=True, exclude_unset=True))
+
+
+pydantic_exclude_set_defaults()

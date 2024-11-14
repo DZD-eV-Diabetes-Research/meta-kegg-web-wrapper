@@ -192,6 +192,7 @@ class MetaKeggPipelineStateManager:
             self.REDIS_NAME_PIPELINE_STATES
         )
         for uuid_hex, pipeline_state_json_raw in all_pipeline_states_json_raw.items():
+
             pipeline_status = MetaKeggPipelineDef.model_validate_json(
                 pipeline_state_json_raw
             )
