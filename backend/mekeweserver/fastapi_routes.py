@@ -271,6 +271,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
             redis_client=redis
         ).get_pipeline_status(pipeline_ticket_id)
+        current = None
         if status.state not in ["initialized"]:
             current = redis.get("TEST_QUEUE_KEY")
             if current is None:
