@@ -79,10 +79,11 @@ class MetakeggPipelineProcessor:
                 # extract only valud params for this method
                 attr = {}
                 for attr_name, field_info in method_params_model.model_fields.items():
-                    attr[attr_name] = (
-                        self.pipeline_definition.pipeline_params.method_specific_params[
-                            attr_name
-                        ]
+                    if attr_name in self.pipeline_definition.pipeline_params.method_specific_params:
+                        attr[attr_name] = (
+                            self.pipeline_definition.pipeline_params.method_specific_params[
+                                attr_name
+                            ]
                     )
                 # create a model instance to validate the inputs
                 method_params = method_params_model(**attr)
