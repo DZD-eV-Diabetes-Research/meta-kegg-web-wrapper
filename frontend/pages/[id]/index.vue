@@ -87,45 +87,59 @@
                                 <div v-for="field in globalParams" :key="field.name">
                                     <UFormGroup
                                         v-if="field.name !== 'input_label' || selectedMethod === 'multiple_inputs'"
-                                        :label="formatLabel(field.name)" :required="field.required"
-                                        :error="formState[`${field.name}_error`]">
+                                        :label="formatLabel(field.name)" :required="field.required">
+
                                         <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
                                             v-model="formState[field.name]"
                                             :placeholder="field.default?.toString() || ''"
                                             :type="getInputType(field.type)" @blur="handleBlur(field.name)"
                                             :color="formState[`${field.name}_error`] ? 'red' : undefined" />
+
                                         <UInput
                                             v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
                                             v-model="formState[field.name]"
                                             placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
                                             :color="formState[`${field.name}_error`] ? 'red' : undefined" />
+
                                         <UToggle v-else-if="field.type === 'bool'" v-model="formState[field.name]"
                                             @blur="handleBlur(field.name)" />
+
                                         <UTextarea v-else-if="field.type === 'List'" v-model="formState[field.name]"
                                             placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
                                             :color="formState[`${field.name}_error`] ? 'red' : undefined" />
+
+                                        <div v-if="formState[`${field.name}_error`]">
+                                            <span style="color: red;">{{ formState[`${field.name}_error`] }}</span>
+                                        </div>
                                     </UFormGroup>
                                 </div>
                                 <div v-for="field in methodSpecificParams" :key="field.name">
                                     <UFormGroup
                                         v-if="field.name !== 'input_label' || selectedMethod === 'multiple_inputs'"
-                                        :label="formatLabel(field.name)" :required="field.required"
-                                        :error="formState[`${field.name}_error`]">
+                                        :label="formatLabel(field.name)" :required="field.required">
+
                                         <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
                                             v-model="formState[field.name]"
                                             :placeholder="field.default?.toString() || ''"
                                             :type="getInputType(field.type)" @blur="handleBlur(field.name)"
                                             :color="formState[`${field.name}_error`] ? 'red' : undefined" />
+
                                         <UInput
                                             v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
                                             v-model="formState[field.name]"
                                             placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
                                             :color="formState[`${field.name}_error`] ? 'red' : undefined" />
+
                                         <UToggle v-else-if="field.type === 'bool'" v-model="formState[field.name]"
                                             @blur="handleBlur(field.name)" />
+
                                         <UTextarea v-else-if="field.type === 'List'" v-model="formState[field.name]"
                                             placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
                                             :color="formState[`${field.name}_error`] ? 'red' : undefined" />
+
+                                        <div v-if="formState[`${field.name}_error`]">
+                                            <span style="color: red;">{{ formState[`${field.name}_error`] }}</span>
+                                        </div>
                                     </UFormGroup>
                                 </div>
                             </UForm>
@@ -281,27 +295,27 @@ const downloadStatus = ref(false)
 const requiredFieldsError = ref('')
 
 function checkRequiredFields() {
-    const allParams = [...globalParams.value, ...methodSpecificParams.value]
+    const allParams = [...globalParams.value, ...methodSpecificParams.value];
     const emptyRequiredFields = allParams.filter(field => {
         if (field.required) {
             if (field.type === 'bool') {
-                return formState.value[field.name] === undefined
+                return formState.value[field.name] === undefined;
             } else if (field.is_list) {
-                return Array.isArray(formState.value[field.name]) && formState.value[field.name].length === 0
+                return Array.isArray(formState.value[field.name]) && formState.value[field.name].length === 0;
             } else {
-                return !formState.value[field.name] && formState.value[field.name] !== false
+                return !formState.value[field.name] && formState.value[field.name] !== false;
             }
         }
-        return false
-    })
+        return false;
+    });
 
     if (emptyRequiredFields.length > 0) {
-        requiredFieldsError.value = `Required field(s) cannot be empty when submitting the form.`
-        return false
+        requiredFieldsError.value = `${emptyRequiredFields.length} required field(s) cannot be empty when submitting the form.`;
+        return false;
     }
 
-    requiredFieldsError.value = ''
-    return true
+    requiredFieldsError.value = '';
+    return true;
 }
 
 async function startPipeline() {
@@ -435,6 +449,12 @@ async function updateFormForMethod(method) {
 function initializeFormState() {
     formState.value = {};
 
+    if (pipelineStatus.value && pipelineStatus.value.pipeline_params) {
+        Object.entries(pipelineStatus.value.pipeline_params).forEach(([key, value]) => {
+            formState.value[key] = value;
+        });
+    }
+
     const allParams = [...globalParams.value, ...methodSpecificParams.value];
     allParams.forEach(field => {
         if (field.name === 'input_label' && selectedMethod.value !== 'multiple_inputs') {
@@ -445,19 +465,20 @@ function initializeFormState() {
             formState.value[field.name] = field.default !== undefined ? field.default : null;
         }
     });
-
-    if (pipelineStatus.value && pipelineStatus.value.pipeline_params) {
-        Object.entries(pipelineStatus.value.pipeline_params).forEach(([key, value]) => {
-            if (key in formState.value) {
-                formState.value[key] = value;
-            }
+}
+watch(() => pipelineStatus.value?.pipeline_params, (newParams) => {
+    if (newParams) {
+        Object.entries(newParams).forEach(([key, value]) => {
+            formState.value[key] = value;
         });
     }
-}
+}, { deep: true, immediate: true });
 
 async function handleBlur(fieldName) {
     const allParams = [...globalParams.value, ...methodSpecificParams.value];
     const field = allParams.find(f => f.name === fieldName);
+
+    formState.value[`${fieldName}_error`] = null;
 
     if (fieldName === 'input_label' && selectedMethod.value !== 'multiple_inputs') {
         formState.value[fieldName] = ["null"];
@@ -468,27 +489,22 @@ async function handleBlur(fieldName) {
         formState.value[fieldName] = formState.value[fieldName].split(',').map(item => item.trim()).filter(Boolean);
     }
 
-    const missingFields = allParams
-        .filter(field => {
-            if (field.required) {
-                if (field.type === 'bool') {
-                    return formState.value[field.name] === undefined;
-                } else if (field.is_list) {
-                    return Array.isArray(formState.value[field.name]) && formState.value[field.name].length === 0;
-                } else {
-                    return !formState.value[field.name] && formState.value[field.name] !== false;
-                }
+    const missingFields = allParams.filter(field => {
+        if (field.required) {
+            if (field.type === 'bool') {
+                return formState.value[field.name] === undefined;
+            } else if (field.is_list) {
+                return Array.isArray(formState.value[field.name]) && formState.value[field.name].length === 0;
+            } else {
+                return !formState.value[field.name] && formState.value[field.name] !== false;
             }
-            return false;
-        });
+        }
+        return false;
+    });
 
     missingFields.forEach(field => {
         formState.value[`${field.name}_error`] = `${formatLabel(field.name)} cannot be empty`;
     });
-
-    if (!missingFields.some(f => f.name === fieldName)) {
-        formState.value[`${fieldName}_error`] = null;
-    }
 
     const valueToSend = formState.value[fieldName];
 
@@ -506,11 +522,7 @@ async function handleBlur(fieldName) {
             body.method_specific_params[fieldName] = valueToSend;
         }
 
-        await $fetch(url, {
-            method: "PATCH",
-            body: body
-        });
-
+        await $fetch(url, { method: "PATCH", body: body });
         await getStatus();
     } catch (error) {
         console.error(`Error updating field ${fieldName}:`, error);
