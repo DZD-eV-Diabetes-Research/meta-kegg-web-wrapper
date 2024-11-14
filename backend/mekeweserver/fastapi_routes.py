@@ -194,10 +194,10 @@ def get_api_router(app: FastAPI) -> APIRouter:
         )
 
         # check if we still can update the pipeline params of if the pipeline is allready triggered
-        if pipeline_status.state != "initialized":
+        if pipeline_status.state in ["queued","running","expired"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Pipeline is not in an updatable state anymore",
+                detail="Pipeline is not in an updatable state",
             )
 
         # Update the current state with new params that where supplied
