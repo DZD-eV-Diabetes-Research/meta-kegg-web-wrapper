@@ -274,14 +274,18 @@ def get_api_router(app: FastAPI) -> APIRouter:
         if status.state not in ["initialized"]:
             current = redis.get("TEST_QUEUE_KEY")
             if current is None:
-                current = redis.set("TEST_QUEUE_KEY", 40)
+
+                redis.set("TEST_QUEUE_KEY", b"4")
+                current = redis.get("TEST_QUEUE_KEY")
             current = int(current)
+
             if current > 0:
-                redis.set("TEST_QUEUE_KEY", current - 1)
+                next = current - 1
+                redis.set("TEST_QUEUE_KEY", str(next))
                 status.state = "queued"
                 status.place_in_queue = current
-
-            # , "queued", "running", "failed", "success", "expired"]
+        print("QUEUE", current)
+        # , "queued", "running", "failed", "success", "expired"]
         return status
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/result
