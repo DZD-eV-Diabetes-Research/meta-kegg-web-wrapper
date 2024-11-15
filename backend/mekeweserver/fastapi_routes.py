@@ -285,6 +285,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
                 redis.set("TEST_QUEUE_KEY", str(next))
                 status.state = "queued"
                 status.place_in_queue = current
+            elif current == 0:
+                # reset fake queue for next run
+                redis.delete("TEST_QUEUE_KEY")
         print("QUEUE", current)
         # , "queued", "running", "failed", "success", "expired"]
         return status
