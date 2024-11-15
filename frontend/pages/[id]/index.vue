@@ -1,24 +1,6 @@
 <template>
     <div>
-        <UIBaseCard customTextAlign="left">
-            <div id="introductionText">
-                <div id="headline" style="margin: 1% 0%;">
-                    <p class="text-4xl">MetaKegg is a tool for everyone...
-                    </p>
-                </div>
-                <p class="text-2xl">
-                    Lorem ipsum dolor sit amet, <NuxtLink style="color: blue;" to="https://pubmed.ncbi.nlm.nih.gov/"
-                        target="_blank">article</NuxtLink> sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut
-                    labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores
-                    et
-                    ea rebum. Stet clita kasd gubergren, no sea takimata <NuxtLink style="color: blue;"
-                        to="https://github.com" target="_blank">documentation</NuxtLink> sanctus est Lorem ipsum dolor
-                    sit
-                    amet.
-                    <NuxtLink style="color: blue;" to="/help">Help</NuxtLink>
-                </p>
-            </div>
-        </UIBaseCard>
+        <StaticIntroBox />
         <div v-if="healthFetchError || !healthStatus?.healthy">
             <UIBaseCard :narrow-width="true">
                 <h1 class="text-3xl font-bold" style="color: red;">There seems to be an error with the server please try
@@ -38,20 +20,7 @@
             </div>
         </UIBaseCard>
         <UIBaseCard v-else :narrow-width="true">
-            <div class="step-box">
-                <h1 class="text-3xl mb-6">Step 0: Copy Your MetaKegg-URL</h1>
-                <UButton :label="url.toString()" color="gray" @click="copyToClipboard">
-                    <template #trailing>
-                        <UIcon :name="icon" class="w-5 h-5" />
-                    </template>
-                </UButton>
-                <div v-show="showCopyMessage" class="notification-box">
-                    <p class="mb-2">{{ copyMessage }}</p>
-                    <div class="w-full">
-                        <UProgress :value="copyProgress" />
-                    </div>
-                </div>
-            </div>
+            <Step0 />
             <hr class="custom-hr">
             <div class="step-box">
                 <h1 class="text-3xl">Step 1: Upload your files</h1>
@@ -168,23 +137,21 @@
                 <h1 class="text-3xl">Step 5: Download your File</h1>
             </div>
             <div v-if="!errorMessage">
-                <!-- <div v-if="myTestAKAStart">
-                    <label for="totalPlaces">totalPlaces</label>
-                    <input v-model="totalPlaces" id="totalPlaces" type="text" style="border: solid;">
-                    <label for="totalPlaces">currentPlace</label>
-                    <input v-model="currentPlace" id="currentPlace" type="text" style="border: solid;">
+                <div v-if="pipelineStatus?.state === 'queued'">
                     <div style="margin: 2% 0%;">
-                        <UProgress :value="progressBar" />
+                        <p>We are currently experiencing something that can only be called an "Andrang" please be
+                            patient</p>
+                        <UProgress :value="pipeLineProgress" />
                         <div style="text-align: right; color: #31c363;">
-                            <p>Your current place is {{ currentPlace }} out of {{ totalPlaces }}</p>
+                            <p>Your current place is {{ pipelineStatus?.place_in_queue }} out of {{ maxPlace }}</p>
                         </div>
                     </div>
-                </div> -->
-                <div v-if="isLoading && pipelineStart">
+                </div>
+                <div v-else-if="isLoading && pipelineStart && pipelineStatus?.state === 'running'">
                     <p style="margin-bottom: 0.5%;">The monkeys are busy in the background please be patient</p>
                     <UProgress animation="carousel" />
                 </div>
-                <div v-if="!isLoading && pipelineStatus.state === 'success'">
+                <div v-else-if="!isLoading && pipelineStatus?.state === 'success'">
                     <UButton @click="downloadFile" variant="outline" label="Your File">
                         <template #trailing>
                             <UIcon name="i-heroicons-cloud-arrow-down" class="w-5 h-5" />
@@ -207,20 +174,11 @@
             </div>
         </UIBaseCard>
     </div>
-
 </template>
 
 <script setup lang="ts">
 
 const route = useRoute()
-const url = useRequestURL()
-const myTestAKAStart = ref(true)
-const totalPlaces = ref(30)
-const currentPlace = ref(30)
-
-const progressBar = computed(() => {
-    return Math.round(100 * (1 - (currentPlace.value / totalPlaces.value)))
-})
 
 const pipeLineProgress = ref(0)
 
@@ -238,10 +196,6 @@ interface AnalysisMethods {
     desc: string
 }
 
-interface Ticket_ID {
-    id: string
-}
-
 const ticket_id = route.params.id
 
 const selectedMethod = ref("single_input_genes")
@@ -251,8 +205,6 @@ const { data: healthStatus, error: healthFetchError } = await useFetch<HealthSta
 const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
 const { data: parameters } = await useFetch(`${runtimeConfig.public.baseURL}/api/${selectedMethod.value}/params`)
 
-// const parameters = pipelineStatus.value.pipeline_params
-
 const { data: analysisMethods, error: analysisMethodsError, status: analysisStatus } = await useFetch<AnalysisMethods[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
 
 const acceptAGB = ref(false)
@@ -260,8 +212,6 @@ const acceptAGB = ref(false)
 watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
     acceptAGB.value = newValue?.length > 0
 }, { immediate: true })
-
-// const pipelineStatus = ref()
 
 const formDataCheck = ref(false)
 
@@ -587,54 +537,9 @@ watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
     }
 }, { deep: true, immediate: true })
 
-const { copy } = useClipboard();
-
-
-const icon = ref("i-heroicons-clipboard-document");
-const copyMessage = ref("");
-const copyProgress = ref(0);
-const showCopyMessage = ref(false);
-
-const copyToClipboard = async () => {
-    const success = await copy(url.toString());
-    if (success) {
-        icon.value = "i-heroicons-clipboard-document-check";
-        copyMessage.value = "URL successfully copied to clipboard";
-        copyProgress.value = 100;
-        showCopyMessage.value = true;
-
-        const startTime = performance.now();
-        const duration = 2500;
-
-        const animate = (currentTime) => {
-            const elapsedTime = currentTime - startTime;
-            const progress = Math.max(0, 100 - (elapsedTime / duration) * 100);
-
-            copyProgress.value = progress;
-
-            if (elapsedTime < duration) {
-                requestAnimationFrame(animate);
-            } else {
-                setTimeout(() => {
-                    showCopyMessage.value = false;
-                }, 500);
-
-                setTimeout(() => {
-                    icon.value = "i-heroicons-clipboard-document";
-                    copyMessage.value = "";
-                    copyProgress.value = 0;
-                }, 1000);
-            }
-        };
-
-        requestAnimationFrame(animate);
-    } else {
-        console.error('Failed to copy URL');
-    }
-};
 </script>
 
-<style scoped>
+<style>
 .select-container {
     display: flex;
     justify-content: center;
@@ -672,34 +577,5 @@ const copyToClipboard = async () => {
     color: red;
     margin-bottom: 10px;
     font-weight: bold;
-}
-
-.copy-message-container {
-    opacity: 1;
-    transition: opacity 0.5s ease-out;
-}
-
-.copy-message-container[style*="display: none"] {
-    opacity: 0;
-}
-
-
-.notification-box {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 16px;
-    width: 300px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    opacity: 1;
-    transition: opacity 0.5s ease-out;
-    z-index: 1000;
-}
-
-.notification-box[style*="display: none"] {
-    opacity: 0;
 }
 </style>
