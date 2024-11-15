@@ -271,6 +271,8 @@ def get_api_router(app: FastAPI) -> APIRouter:
         status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
             redis_client=redis
         ).get_pipeline_status(pipeline_ticket_id)
+
+        """HOTPATCH FOR TESTING LINE-QUEUING IN UI
         current = None
         if status.state not in ["initialized"]:
             current = redis.get("TEST_QUEUE_KEY")
@@ -290,6 +292,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
                 redis.delete("TEST_QUEUE_KEY")
         print("QUEUE", current)
         # , "queued", "running", "failed", "success", "expired"]
+        """
         return status
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/result
