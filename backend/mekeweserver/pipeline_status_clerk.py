@@ -137,8 +137,9 @@ class MetaKeggPipelineStateManager:
             for e in MetaKeggPipelineAnalysisMethodDocs
             if e.name == analysis_method_name
         )
+        queue_length = self.redis_client.llen(self.REDIS_NAME_PIPELINE_QUEUE)
         self.set_pipeline_run_definition(pipeline_status)
-        self.redis_client.lpush(self.REDIS_NAME_PIPELINE_QUEUE, ticket_id.hex)
+        pipeline_status.place_in_queue = queue_length + 1
         return pipeline_status
 
     def set_pipeline_state_as_running(
