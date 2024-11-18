@@ -2,9 +2,9 @@
 # ## APP_NAME ###
 # Type:      str
 # Required:  False
-# Default:   "Meta Kegg Webwrapper"
+# Default:   "MetaKeggWeb"
 # Env-var:   'APP_NAME'
-APP_NAME: Meta Kegg Webwrapper
+APP_NAME: MetaKeggWeb
 
 # ## LOG_LEVEL ###
 # Type:          Enum
@@ -13,30 +13,6 @@ APP_NAME: Meta Kegg Webwrapper
 # Allowed vals:  ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG']
 # Env-var:       'LOG_LEVEL'
 LOG_LEVEL: DEBUG
-
-# ## FRONTEND_FILES_DIR ###
-# Type:         str
-# Required:     False
-# Default:      "frontend/.output/public"
-# Env-var:      'FRONTEND_FILES_DIR'
-# Description:  The generated nuxt dir that contains index.html,...
-FRONTEND_FILES_DIR: frontend/.output/public
-
-# ## CLIENT_URL ###
-# Type:         str
-# Required:     False
-# Default:      null/None
-# Env-var:      'CLIENT_URL'
-# Description:  The URL where the client is hosted. Usualy it comes with the server
-CLIENT_URL: localhost:3000
-
-# ## SERVER_UVICORN_LOG_LEVEL ###
-# Type:         str
-# Required:     False
-# Default:      null/None
-# Env-var:      'SERVER_UVICORN_LOG_LEVEL'
-# Description:  The log level of the uvicorn server. If not defined it will be the same as LOG_LEVEL.
-SERVER_UVICORN_LOG_LEVEL:
 
 # ## SERVER_LISTENING_PORT ###
 # Type:      int
@@ -89,7 +65,7 @@ SERVER_PROTOCOL:
 # Required:     False
 # Default:      240
 # Env-var:      'PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER'
-# Description:  If a pipeline run is initialized but not started, it will be considered as abandoned after this time and be deleted.
+# Description:  If a MetaKegg pipeline run is initialized but not started, it will be considered as abandoned after this time and be deleted.
 PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER: 240
 
 # ## PIPELINE_RESULT_EXPIRED_AFTER_MIN ###
@@ -97,7 +73,7 @@ PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER: 240
 # Required:     False
 # Default:      1440
 # Env-var:      'PIPELINE_RESULT_EXPIRED_AFTER_MIN'
-# Description:  If a pipeline has finished, it will be considered as obsolete after the result will be deleted to save storage. The metadata will still be existent and the user will be notified that the pipeline is expired.
+# Description:  If a MetaKegg pipeline has finished, it will be considered as obsolete after the result will be deleted to save storage. The metadata will still be existent and the user will be notified that the pipeline is expired.
 PIPELINE_RESULT_EXPIRED_AFTER_MIN: 1440
 
 # ## PIPELINE_RESULT_DELETED_AFTER_MIN ###
@@ -105,81 +81,8 @@ PIPELINE_RESULT_EXPIRED_AFTER_MIN: 1440
 # Required:     False
 # Default:      1440
 # Env-var:      'PIPELINE_RESULT_DELETED_AFTER_MIN'
-# Description:  If a pipeline has finished and is expired, all its metadata will be wiped after this amounts of minutes after expiring. If a user tries to revisit it, there will be a 404 error.
+# Description:  If a MetaKegg pipeline has finished and is expired, all its metadata will be wiped after this amounts of minutes after expiring. If a user tries to revisit it, there will be a 404 error.
 PIPELINE_RESULT_DELETED_AFTER_MIN: 1440
-
-# ## ENABLE_RATE_LIMITING ###
-# Type:         bool
-# Required:     False
-# Default:      true
-# Env-var:      'ENABLE_RATE_LIMITING'
-# Description:  Only allows a certain amount of API requests. Helps mitigating filling the pipeline queue with garbage and DDOS attacks.
-ENABLE_RATE_LIMITING: true
-
-# ## MAX_PIPELINE_RUNS_PER_HOUR_PER_IP ###
-# Type:         int
-# Required:     False
-# Default:      5
-# Env-var:      'MAX_PIPELINE_RUNS_PER_HOUR_PER_IP'
-# Description:  Rate limiting parameter. How many pipeline runs can be started from one IP.
-MAX_PIPELINE_RUNS_PER_HOUR_PER_IP: 5
-
-# ## REDIS_CONNECTION_PARAMS ###
-# Type:         Object
-# Required:     False
-# Default:      null/None
-# Env-var:      'REDIS_CONNECTION_PARAMS'
-# Description:  Connection params for a redis database to be used as backend storage/cache. Is not set a python fakeredis process will be started to be used as backend storage/cache.
-# Example:
-# >REDIS_CONNECTION_PARAMS:
-# >  db: 0
-# >  decode_responses: false
-# >  host: localhost
-# >  max_connections: null
-# >  password: null
-# >  port: 6379
-# >  retry_on_timeout: false
-# >  socket_connect_timeout: null
-# >  socket_keepalive: null
-# >  socket_timeout: null
-# >  ssl: false
-# >  ssl_ca_certs: null
-# >  ssl_certfile: null
-# >  ssl_check_hostname: false
-# >  ssl_keyfile: null
-# >  username: tim
-REDIS_CONNECTION_PARAMS:
-
-# ## PIPELINE_RUNS_CACHE_DIR ###
-# Type:         str
-# Required:     False
-# Default:      "/tmp/mekewe_cache"
-# Env-var:      'PIPELINE_RUNS_CACHE_DIR'
-# Description:  Storage directory for MetaKEGG Pipeline ressults.
-PIPELINE_RUNS_CACHE_DIR: /tmp/mekewe_cache
-
-# ## DUMP_OPEN_API_SPECS_ON_BOOT ###
-# Type:         bool
-# Required:     False
-# Default:      false
-# Env-var:      'DUMP_OPEN_API_SPECS_ON_BOOT'
-# Description:  If set to true, the server will dump an openapi.json file in the root dir of this repo on boot.
-DUMP_OPEN_API_SPECS_ON_BOOT: true
-
-# ## DUMP_OPEN_API_SPECS_ON_BOOT_DIR ###
-# Type:         str
-# Required:     False
-# Default:      null/None
-# Env-var:      'DUMP_OPEN_API_SPECS_ON_BOOT_DIR'
-# Description:  If not None and DUMP_OPEN_API_SPECS_ON_BOOT set to true, the server will dump a openapi.json file in this directory on boot.
-DUMP_OPEN_API_SPECS_ON_BOOT_DIR:
-
-# ## RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES ###
-# Type:      int
-# Required:  False
-# Default:   3
-# Env-var:   'RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES'
-RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES: 3
 
 # ## CLIENT_CONTACT_EMAIL ###
 # Type:      str
@@ -253,3 +156,102 @@ CLIENT_LINK_LIST:
     # Required:   True
     # Env-var:    'CLIENT_LINK_LIST__<list-index>__<dict-key>'
     link: https://doi.org/10.1080/00431672.1975.9931768
+
+# ## ENABLE_RATE_LIMITING ###
+# Type:         bool
+# Required:     False
+# Default:      true
+# Env-var:      'ENABLE_RATE_LIMITING'
+# Description:  Only allows a certain amount of API requests. Helps mitigating filling the pipeline queue with garbage and DDOS attacks.
+ENABLE_RATE_LIMITING: true
+
+# ## MAX_PIPELINE_RUNS_PER_HOUR_PER_IP ###
+# Type:         int
+# Required:     False
+# Default:      5
+# Env-var:      'MAX_PIPELINE_RUNS_PER_HOUR_PER_IP'
+# Description:  Rate limiting parameter. How many pipeline runs can be started from one IP.
+MAX_PIPELINE_RUNS_PER_HOUR_PER_IP: 5
+
+# ## REDIS_CONNECTION_PARAMS ###
+# Type:         Object
+# Required:     False
+# Default:      null/None
+# Env-var:      'REDIS_CONNECTION_PARAMS'
+# Description:  Connection params for a redis the database (client lib used: https://github.com/redis/redis-py) to be used as backend storage/cache. Is not set a python fakeredis process will be started to be used as backend storage/cache.
+# Example:
+# >REDIS_CONNECTION_PARAMS:
+# >  db: 0
+# >  decode_responses: false
+# >  host: localhost
+# >  max_connections: null
+# >  password: null
+# >  port: 6379
+# >  retry_on_timeout: false
+# >  socket_connect_timeout: null
+# >  socket_keepalive: null
+# >  socket_timeout: null
+# >  ssl: false
+# >  ssl_ca_certs: null
+# >  ssl_certfile: null
+# >  ssl_check_hostname: false
+# >  ssl_keyfile: null
+# >  username: tim
+REDIS_CONNECTION_PARAMS:
+
+# ## PIPELINE_RUNS_CACHE_DIR ###
+# Type:         str
+# Required:     False
+# Default:      "/tmp/mekewe_cache"
+# Env-var:      'PIPELINE_RUNS_CACHE_DIR'
+# Description:  Storage directory for MetaKEGG Pipeline ressults.
+PIPELINE_RUNS_CACHE_DIR: /tmp/mekewe_cache
+
+# ## FRONTEND_FILES_DIR ###
+# Type:         str
+# Required:     False
+# Default:      "frontend/.output/public"
+# Env-var:      'FRONTEND_FILES_DIR'
+# Description:  Files for the web client. Should contain a builded nuxt client (`frontend/.output/public` The directory that contains index.html,...)
+FRONTEND_FILES_DIR: frontend/.output/public
+
+# ## CLIENT_URL ###
+# Type:         str
+# Required:     False
+# Default:      null/None
+# Env-var:      'CLIENT_URL'
+# Description:  The URL where the client is hosted. Usually it is hosted with the API Server, but if you develop on the client with a Vuejs/Nuxt Development server, you may want to change this.
+# Example:
+# >CLIENT_URL: http://localhost:3000
+CLIENT_URL: localhost:3000
+
+# ## SERVER_UVICORN_LOG_LEVEL ###
+# Type:         str
+# Required:     False
+# Default:      null/None
+# Env-var:      'SERVER_UVICORN_LOG_LEVEL'
+# Description:  The log level of the uvicorn web server. If not defined it will be the same as LOG_LEVEL.
+SERVER_UVICORN_LOG_LEVEL:
+
+# ## DUMP_OPEN_API_SPECS_ON_BOOT ###
+# Type:         bool
+# Required:     False
+# Default:      false
+# Env-var:      'DUMP_OPEN_API_SPECS_ON_BOOT'
+# Description:  If set to true, the server will dump an openapi.json file in the root dir of this repo on boot.
+DUMP_OPEN_API_SPECS_ON_BOOT: true
+
+# ## DUMP_OPEN_API_SPECS_ON_BOOT_DIR ###
+# Type:         str
+# Required:     False
+# Default:      null/None
+# Env-var:      'DUMP_OPEN_API_SPECS_ON_BOOT_DIR'
+# Description:  If not None and DUMP_OPEN_API_SPECS_ON_BOOT set to true, the server will dump a openapi.json file in this directory on boot.
+DUMP_OPEN_API_SPECS_ON_BOOT_DIR:
+
+# ## RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES ###
+# Type:      int
+# Required:  False
+# Default:   3
+# Env-var:   'RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES'
+RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES: 3

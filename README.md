@@ -31,9 +31,13 @@ Web interfacec for https://github.com/dife-bioinformatics/metaKEGG
 
 # Install and Run
 
+> [!IMPORTANT]  
+> This project is intended to run in  a Linux/Unix environment. It should also be able to run in a MS Windows environment but was not tested yet. There may be still bugs regarding Path resolutions on MS Windows.
+
+
 ##  Option1: Run with prebuild container
 
-> [!NOTE]  
+> [!WARNING]  
 > Work in Process: This needs [MetaKegg](https://github.com/dife-bioinformatics/metaKEGG) to be public. There is no public pre-build container yet.
 
 
@@ -53,7 +57,7 @@ visit http://localhost:8282/docs to see the OpenAPI Rest Specification
 
 ##  Option2: Build and run with Docker
 
-> [!NOTE]  
+> [!WARNING]  
 > Work in Process: This needs [MetaKegg](https://github.com/dife-bioinformatics/metaKEGG) to be public. Otherwise its not downloadable and installable by the Docker build process.
 
 **requirements**

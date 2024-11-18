@@ -188,7 +188,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         # get current params from db
         pipeline_status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
             redis_client=redis
-        ).get_pipeline_status(
+        ).get_pipeline_run_definition(
             pipeline_ticket_id,
             raise_exception_if_not_exists=pipelinerun_not_found_exception,
         )
@@ -209,7 +209,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
             pipeline_status.pipeline_params.method_specific_params[key] = val
 
         # Save the new state to the db
-        MetaKeggPipelineStateManager(redis_client=redis).set_pipeline_status(
+        MetaKeggPipelineStateManager(redis_client=redis).set_pipeline_run_definition(
             pipeline_status,
         )
         return pipeline_status
@@ -227,9 +227,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
         pipeline_ticket_id: uuid.UUID,
         file: UploadFile = File(...),
     ) -> MetaKeggPipelineDef:
-        return MetaKeggPipelineStateManager(redis_client=redis).attach_input_file(
-            pipeline_ticket_id, file
-        )
+        return MetaKeggPipelineStateManager(
+            redis_client=redis
+        ).attach_pipeline_run_input_file(pipeline_ticket_id, file)
 
     analysis_method_names_type_hint = Literal[
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])
@@ -270,7 +270,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     ):
         status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
             redis_client=redis
-        ).get_pipeline_status(pipeline_ticket_id)
+        ).get_pipeline_run_definition(pipeline_ticket_id)
 
         """HOTPATCH FOR TESTING LINE-QUEUING IN UI
         current = None
@@ -310,7 +310,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     ):
         status: MetaKeggPipelineDef | None = MetaKeggPipelineStateManager(
             redis_client=redis
-        ).get_pipeline_status(pipeline_ticket_id)
+        ).get_pipeline_run_definition(pipeline_ticket_id)
         if status is None:
             raise pipelinerun_not_found_exception
         if status.state == "failed":

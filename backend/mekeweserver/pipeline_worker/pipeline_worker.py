@@ -3,6 +3,8 @@ from multiprocessing import Process, Event
 import shutil
 import traceback
 import os
+from pathlib import Path
+import uuid
 
 # from metaKEGG import Pipeline
 # from mekeweserver.model import PipelineInputParams
@@ -45,6 +47,7 @@ class PipelineWorker(Process):
                 pipeline_state_manager = MetaKeggPipelineStateManager(
                     redis_client=redis_client
                 )
+                self._clean_zombie_files(pipeline_state_manager)
                 self._process_next_pipeline_in_queue(pipeline_state_manager)
                 self._process_next_expiring_pipeline(pipeline_state_manager)
                 self._process_next_deletable_pipeline(pipeline_state_manager)
@@ -118,7 +121,9 @@ class PipelineWorker(Process):
             next_pipeline_definition_that_is_expired.pipeline_output_zip_file_name = (
                 f"{output_zip_name} (Deleted)"
             )
-        state_manager.set_pipeline_status(next_pipeline_definition_that_is_expired)
+        state_manager.set_pipeline_run_definition(
+            next_pipeline_definition_that_is_expired
+        )
 
         # delete all cached file for this pipeline
         shutil.rmtree(next_pipeline_definition_that_is_expired.get_files_base_dir())
@@ -153,3 +158,32 @@ class PipelineWorker(Process):
         state_manager.delete_pipeline_status(
             ticket_id=next_pipeline_definition_that_is_deletable.ticket.id
         )
+
+    def _clean_zombie_files(self, state_manager: MetaKeggPipelineStateManager):
+        cache_dir = Path(config.PIPELINE_RUNS_CACHE_DIR)
+        all_pipeline_definition = state_manager.get_all_pipeline_run_definitions()
+        all_pipeline_definition_ids: List[uuid.UUID] = [
+            d.ticket.id for d in all_pipeline_definition
+        ]
+        if not cache_dir.exists():
+            return
+        for path_obj in cache_dir.iterdir():
+            if path_obj.is_dir():
+                directory_ticket_id: uuid.UUID = None
+                try:
+                    directory_ticket_id = uuid.UUID(path_obj.name)
+                except ValueError as e:
+                    if (
+                        hasattr(e, "message")
+                        and e.message == "badly formed hexadecimal UUID string"
+                    ):
+                        # this is not a uuid named directory. Maybe a directory we dont have to do anything with
+                        log.warning(
+                            f"There seems to be a non standard directory in the cache dir at {path_obj.resolve()}."
+                        )
+                    else:
+                        raise e
+                if directory_ticket_id not in all_pipeline_definition_ids:
+                    # we got a zombie, sir!
+                    log.warning(f"Delete zombie directory at {path_obj.resolve()}")
+                    shutil.rmtree(path_obj)

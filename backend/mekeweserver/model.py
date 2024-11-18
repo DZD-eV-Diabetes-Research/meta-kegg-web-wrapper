@@ -359,11 +359,14 @@ class MetaKeggPipelineInputParamsValuesUpdate(BaseModel):
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
 
+MetaKeggPipelineDefStates = Literal[
+    "initialized", "queued", "running", "failed", "success", "expired"
+]
+
+
 class MetaKeggPipelineDef(BaseModel):
     ticket: MetaKeggPipelineTicket
-    state: Literal[
-        "initialized", "queued", "running", "failed", "success", "expired"
-    ] = Field(
+    state: MetaKeggPipelineDefStates = Field(
         default="initialized",
         description=f"When a new pipeline run is started it will be `queued` first. After there is slot free in the background worker it start `running`. based on the failure or success of this run the state will be `failed` or `success`. The result of a pipeline run will be cleaned/deleted after {config.PIPELINE_RESULT_EXPIRED_AFTER_MIN} minutes and not be available anymore. After that the state will be `expired`",
     )

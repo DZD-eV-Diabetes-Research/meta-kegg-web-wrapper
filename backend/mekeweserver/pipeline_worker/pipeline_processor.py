@@ -79,21 +79,28 @@ class MetakeggPipelineProcessor:
                 # extract only valud params for this method
                 attr = {}
                 for attr_name, field_info in method_params_model.model_fields.items():
-                    if attr_name in self.pipeline_definition.pipeline_params.method_specific_params:
+                    if (
+                        attr_name
+                        in self.pipeline_definition.pipeline_params.method_specific_params
+                    ):
                         attr[attr_name] = (
                             self.pipeline_definition.pipeline_params.method_specific_params[
                                 attr_name
                             ]
-                    )
+                        )
                 # create a model instance to validate the inputs
                 method_params = method_params_model(**attr)
-                event_loop.run_until_complete(analysis_method_func(**method_params.model_dump()))
+                event_loop.run_until_complete(
+                    analysis_method_func(**method_params.model_dump())
+                )
         except Exception as e:
             self.pipeline_definition = self.handle_exception(e)
             return self.pipeline_definition
 
-        self.pipeline_definition = self.pipeline_state_manager.get_pipeline_status(
-            ticket_id=self.pipeline_definition.ticket.id
+        self.pipeline_definition = (
+            self.pipeline_state_manager.get_pipeline_run_definition(
+                ticket_id=self.pipeline_definition.ticket.id
+            )
         )
         self.pipeline_definition.pipeline_output_zip_file_name = (
             self.pipeline_definition.generate_output_zip_file_name()
@@ -107,7 +114,9 @@ class MetakeggPipelineProcessor:
             return self.pipeline_definition
 
         self.pipeline_definition.state = "success"
-        self.pipeline_state_manager.set_pipeline_status(self.pipeline_definition)
+        self.pipeline_state_manager.set_pipeline_run_definition(
+            self.pipeline_definition
+        )
         return self.pipeline_definition
 
     def pack_output(self):
@@ -133,13 +142,15 @@ class MetakeggPipelineProcessor:
         self, e: Exception, pipeline_status: Optional[MetaKeggPipelineDef] = None
     ) -> MetaKeggPipelineDef:
         if pipeline_status is None:
-            pipeline_definition = self.pipeline_state_manager.get_pipeline_status(
-                ticket_id=self.pipeline_definition.ticket.id
+            pipeline_definition = (
+                self.pipeline_state_manager.get_pipeline_run_definition(
+                    ticket_id=self.pipeline_definition.ticket.id
+                )
             )
         pipeline_definition.state = "failed"
         pipeline_definition.error = str(e)
         pipeline_definition.error_traceback = str(traceback.format_exc())
-        pipeline_definition = self.pipeline_state_manager.set_pipeline_status(
+        pipeline_definition = self.pipeline_state_manager.set_pipeline_run_definition(
             pipeline_definition
         )
         return pipeline_definition
