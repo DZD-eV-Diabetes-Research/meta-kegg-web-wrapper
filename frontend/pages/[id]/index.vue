@@ -149,10 +149,11 @@
             <div v-if="!errorMessage">
                 <div v-if="pipelineStatus?.state === 'queued'">
                     <div style="margin: 2% 0%;">
-                        <p>We are currently experiencing a high number of requests. You are placed in a queue, please be patient.</p>
+                        <p>You are placed in a queue, please be patient.
+                        </p>
                         <UProgress :value="pipeLineProgress" />
                         <div style="text-align: right; color: #31c363;">
-                            <p>Your current place is {{ pipelineStatus?.place_in_queue }} out of {{ maxPlace }}</p>
+                            <p>Your current place is {{ pipelineStatus?.place_in_queue + 1 }} out of {{ maxPlace }}</p>
                         </div>
                     </div>
                 </div>
@@ -178,11 +179,11 @@
                         <div style="text-align: left;">
                             <p style="color: red;" v-html="item.content" />
                             <br>
-                            <div
+                            <div 
                                 style="display: flex; justify-content: center; align-items: center; height: 100%; width: 100%;">
-                                <div style="border: solid 1px; padding: 10px;">
-                                    <a class="text-3xl"
-                                        href="mailto:{{ config.bug_report_email }}?subject='Error Metakegg'&body='{{ item.content }}'">
+                                <div style="border: solid 1px;" class="email-support-container">
+                                    <a class="text-3xl" style="padding: 15px;"
+                                        :href="`mailto:${config.bug_report_email}?subject=Error Metakegg&body=During the run of the following URL: %0D%0A %0D%0A ${url.toString()}   %0D%0A %0D%0A The page returned the following %0D%0A%0D%0A Errorstack:  %0D%0A%0D%0A  ${encodeURIComponent(errorStack)}`">
                                         Send a mail to our support
                                         <UIcon name="i-heroicons-paper-airplane" class="w-5 h-5" />
                                     </a>
@@ -197,6 +198,7 @@
 </template>
 
 <script setup lang="ts">
+const url = useRequestURL()
 
 const route = useRoute()
 
@@ -227,6 +229,9 @@ const { data: pipelineStatus, error: statusError } = await useFetch(`${runtimeCo
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
 const { data: parameters } = await useFetch(`${runtimeConfig.public.baseURL}/api/${selectedMethod.value}/params`)
+
+const errorStack = ref("")
+
 
 const { data: analysisMethods, error: analysisMethodsError, status: analysisStatus } = await useFetch<AnalysisMethods[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
 
@@ -300,6 +305,9 @@ function checkRequiredFields() {
     return true;
 }
 
+const maxPlace = ref()
+const isMaxPlaceSet = ref(false)
+
 async function startPipeline() {
     downloadStatus.value = false
     pipelineStart.value = true
@@ -322,9 +330,22 @@ async function startPipeline() {
     }
 
     try {
-        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/run/${selectedMethod.value}`, {
+        pipelineStatus.value = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/run/${selectedMethod.value}`, {
             method: "POST"
         })
+
+        if (pipelineStatus.value.place_in_queue) {
+
+            if (!isMaxPlaceSet.value) {
+                maxPlace.value = pipelineStatus.value.place_in_queue
+                isMaxPlaceSet.value = true
+
+
+            }
+            pipeLineProgress.value = Math.round(100 * ((pipelineStatus.value.place_in_queue / maxPlace.value)))
+
+        }
+
         await getStatus()
 
         while (pipelineStatus.value.state !== 'success' && pipelineStatus.value.state !== 'failed') {
@@ -350,19 +371,13 @@ async function startPipeline() {
     }
 }
 
-const maxPlace = ref()
-const isMaxPlaceSet = ref(false)
-
 async function getStatus() {
     pipelineStatus.value = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
 
     if (pipelineStatus.value.place_in_queue) {
-        if (!isMaxPlaceSet.value) {
-            maxPlace.value = pipelineStatus.value.place_in_queue
-            isMaxPlaceSet.value = true
-        }
-        pipeLineProgress.value = Math.round(100 * (1 - (pipelineStatus.value.place_in_queue / maxPlace.value)))
+        pipeLineProgress.value = Math.round(100 * ((pipelineStatus.value.place_in_queue / maxPlace.value)))
     }
+    errorStack.value = pipelineStatus.value.error_traceback
 }
 
 
@@ -600,5 +615,9 @@ watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
     color: red;
     margin-bottom: 10px;
     font-weight: bold;
+}
+
+.email-support-container:hover {
+    background-color: #f0f0f0;
 }
 </style>
