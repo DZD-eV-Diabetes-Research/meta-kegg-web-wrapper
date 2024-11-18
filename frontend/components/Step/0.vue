@@ -16,10 +16,10 @@
 </template>
 
 <script setup lang="ts">
-
 const url = useRequestURL()
 
 const { copy } = useClipboard();
+
 
 const icon = ref("i-heroicons-clipboard-document");
 const copyMessage = ref("");
