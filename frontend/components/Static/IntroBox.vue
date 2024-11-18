@@ -17,5 +17,14 @@
                 <NuxtLink style="color: blue;" to="/help">Help</NuxtLink>
             </p>
         </div>
+    <p v-for="link in links">
+        <li>{{ link.title }} {{ link.link }}</li>
+    </p>
+        
     </UIBaseCard>
 </template>
+
+<script setup lang="ts">
+const runtimeConfig = useRuntimeConfig();
+const {data: links} = await useFetch(`${runtimeConfig.public.baseURL}/info-links`) 
+</script>
