@@ -9,15 +9,16 @@ from mekeweserver.config import RedisConnectionParams
 import redis
 from mekeweserver.model import (
     MetaKeggPipelineDef,
+    MetaKeggPipelineDefStates,
     MetaKeggPipelineTicket,
     MetaKeggPipelineInputParamsDocs,
     MetaKeggPipelineAnalysisMethodDocs,
     MetaKeggPipelineInputParamsValues,
 )
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
 
-config = Config()
+config: Config = get_config()
 log = get_logger()
 
 
@@ -27,6 +28,21 @@ class MetaKeggPipelineStateManager:
 
     def __init__(self, redis_client: redis.Redis):
         self.redis_client = redis_client
+
+    def get_all_pipeline_run_definitions(
+        self, filter_state: MetaKeggPipelineDefStates = None
+    ) -> List[MetaKeggPipelineDef]:
+        result = []
+        raw_definitions: str = self.redis_client.hgetall(
+            self.REDIS_NAME_PIPELINE_STATES
+        ).values()
+        for raw_definition in raw_definitions:
+            definition = MetaKeggPipelineDef.model_validate_json(raw_definition)
+            if filter_state is not None and definition.state == filter_state:
+                result.append(definition)
+            elif filter_state is None:
+                result.append(definition)
+        return result
 
     def init_new_pipeline_run(
         self, params: MetaKeggPipelineInputParamsValues
@@ -39,10 +55,10 @@ class MetaKeggPipelineStateManager:
             pipeline_input_file_names=None,
             pipeline_params=params,
         )
-        self.set_pipeline_status(pipeline_status)
+        self.set_pipeline_run_definition(pipeline_status)
         return ticket
 
-    def get_pipeline_status(
+    def get_pipeline_run_definition(
         self, ticket_id: uuid.UUID, raise_exception_if_not_exists: Exception = None
     ) -> MetaKeggPipelineDef:
         raw_data: str = self.redis_client.hget(
@@ -59,14 +75,14 @@ class MetaKeggPipelineStateManager:
                 data.place_in_queue = int(pos_as_str)
         return data
 
-    def set_pipeline_status(self, pipeline_status: MetaKeggPipelineDef):
+    def set_pipeline_run_definition(self, pipeline_status: MetaKeggPipelineDef):
         self.redis_client.hset(
             self.REDIS_NAME_PIPELINE_STATES,
             pipeline_status.ticket.id.hex,
             pipeline_status.model_dump_json(),
         )
 
-    def attach_input_file(
+    def attach_pipeline_run_input_file(
         self, ticket_id: uuid.UUID, upload_file_object: UploadFile
     ) -> MetaKeggPipelineDef:
         if upload_file_object.filename is None:
@@ -77,7 +93,7 @@ class MetaKeggPipelineStateManager:
             c for c in upload_file_object.filename if c.isalnum() or c in keepcharacters
         ).rstrip()
 
-        pipeline_status = self.get_pipeline_status(ticket_id)
+        pipeline_status = self.get_pipeline_run_definition(ticket_id)
 
         # define storage path for file
         internal_file_path = Path(
@@ -96,14 +112,14 @@ class MetaKeggPipelineStateManager:
             pipeline_status.pipeline_input_file_names = []
 
         pipeline_status.pipeline_input_file_names.append(clean_file_name)
-        self.set_pipeline_status(pipeline_status)
+        self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 
     def set_pipeline_run_as_queud(
         self, ticket_id: uuid.UUID, analysis_method_name: str
     ) -> MetaKeggPipelineDef:
         log.info(f"Add pipeline-run with id '{ticket_id}' to queue.")
-        pipeline_status = self.get_pipeline_status(ticket_id)
+        pipeline_status = self.get_pipeline_run_definition(ticket_id)
 
         # reset error from previous runs (if existent)...
         pipeline_status.error = None
@@ -121,7 +137,7 @@ class MetaKeggPipelineStateManager:
             for e in MetaKeggPipelineAnalysisMethodDocs
             if e.name == analysis_method_name
         )
-        self.set_pipeline_status(pipeline_status)
+        self.set_pipeline_run_definition(pipeline_status)
         self.redis_client.lpush(self.REDIS_NAME_PIPELINE_QUEUE, ticket_id.hex)
         return pipeline_status
 
@@ -129,17 +145,17 @@ class MetaKeggPipelineStateManager:
         self,
         ticket_id: uuid.UUID,
     ) -> MetaKeggPipelineDef:
-        pipeline_status = self.get_pipeline_status(ticket_id)
+        pipeline_status = self.get_pipeline_run_definition(ticket_id)
 
         pipeline_status.state = "running"
         pipeline_status.started_at_utc = datetime.datetime.now(tz=datetime.timezone.utc)
-        self.set_pipeline_status(pipeline_status)
+        self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 
     def set_pipeline_state_as_finished(
         self, ticket_id: uuid.UUID, error_msg: str = None, result_file_path: Path = None
     ) -> MetaKeggPipelineDef:
-        pipeline_status = self.get_pipeline_status(ticket_id)
+        pipeline_status = self.get_pipeline_run_definition(ticket_id)
         pipeline_status.state = "failed" if error_msg is not None else "success"
         if error_msg:
             pipeline_status.error = error_msg
@@ -148,14 +164,14 @@ class MetaKeggPipelineStateManager:
         pipeline_status.finished_at_utc = datetime.datetime.now(
             tz=datetime.timezone.utc
         )
-        self.set_pipeline_status(pipeline_status)
+        self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 
     def clean_pipeline_run(self, ticket_id: uuid.UUID) -> MetaKeggPipelineDef:
-        pipeline_status = self.get_pipeline_status(ticket_id)
+        pipeline_status = self.get_pipeline_run_definition(ticket_id)
         shutil.rmtree(pipeline_status.get_files_base_dir())
         pipeline_status.state = "expired"
-        self.set_pipeline_status(pipeline_status)
+        self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 
     def delete_pipeline_status(self, ticket_id: uuid.UUID):
@@ -176,13 +192,13 @@ class MetaKeggPipelineStateManager:
             f"Pick up next pipeline-run with id '{raw_ticket_id}' from queue to be processed..."
         )
         next_ticket_id = uuid.UUID(raw_ticket_id)
-        pipeline_status = self.get_pipeline_status(next_ticket_id)
+        pipeline_status = self.get_pipeline_run_definition(next_ticket_id)
         if set_status_running:
             pipeline_status.state = "running"
             pipeline_status.started_at_utc = datetime.datetime.now(
                 tz=datetime.timezone.utc
             )
-            self.set_pipeline_status(pipeline_status)
+            self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 
     def get_next_pipeline_that_is_expired(
@@ -199,7 +215,7 @@ class MetaKeggPipelineStateManager:
             if self.is_pipeline_run_expired(pipeline_status):
                 if set_status_expired:
                     pipeline_status.state = "expired"
-                    self.set_pipeline_status(pipeline_status)
+                    self.set_pipeline_run_definition(pipeline_status)
                 return pipeline_status
         return None
 

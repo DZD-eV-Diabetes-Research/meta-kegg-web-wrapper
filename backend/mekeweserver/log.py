@@ -1,9 +1,9 @@
 import logging
 import sys, os
 
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 
-config = Config()
+config: Config = get_config()
 from fastapi.logger import logger
 
 APP_LOGGER_DEFAULT_NAME = "MetaKeggWeb"

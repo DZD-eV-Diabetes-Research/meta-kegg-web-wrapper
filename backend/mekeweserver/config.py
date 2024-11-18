@@ -3,6 +3,7 @@ import uuid
 from typing import Literal, Optional, TypedDict, List, Dict
 from pathlib import Path, PurePath
 from typing_extensions import Self
+from psyplus import YamlSettingsPlus
 from pydantic import (
     Field,
     AnyUrl,
@@ -14,8 +15,14 @@ from pydantic import (
 from pydantic_settings import BaseSettings
 import socket
 
+
 env_file_path = os.environ.get(
-    "MEKEWESERVER_DOT_ENV_FILE", Path(__file__).parent / ".env"
+    "MEKEWESERVER_DOT_ENV_FILE", PurePath(Path(__file__).parent, ".env")
+)
+
+yaml_file_path = os.environ.get(
+    "MEKEWESERVER_YAML_CONFIG_FILE",
+    PurePath(Path(__file__).parent.parent.parent, "config.yaml"),
 )
 
 
@@ -39,32 +46,9 @@ class RedisConnectionParams(BaseSettings):
 
 
 class Config(BaseSettings):
-    APP_NAME: str = "Meta Kegg Webwrapper"
+    APP_NAME: str = "MetaKeggWeb"
     LOG_LEVEL: Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"] = Field(
         default="INFO"
-    )
-    # Client
-    FRONTEND_FILES_DIR: str = Field(
-        description="The generated nuxt dir that contains index.html,...",
-        default=str(
-            Path(Path(__file__).parent.parent.parent, "frontend/.output/public")
-        ),
-    )
-    CLIENT_URL: Optional[str] = Field(
-        default=None,
-        description="The URL where the client is hosted. Usualy it comes with the server",
-    )
-
-    @model_validator(mode="after")
-    def set_empty_client_url(self: Self):
-        if self.CLIENT_URL is None:
-            self.CLIENT_URL = self.get_server_url()
-        return self
-
-    # Webserver
-    SERVER_UVICORN_LOG_LEVEL: Optional[str] = Field(
-        default=None,
-        description="The log level of the uvicorn server. If not defined it will be the same as LOG_LEVEL.",
     )
 
     SERVER_LISTENING_PORT: int = Field(default=8282)
@@ -84,15 +68,43 @@ class Config(BaseSettings):
     )
     PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER: int = Field(
         default=240,
-        description="If a pipeline run is initialized but not started, it will be considered as abandoned after this time and be deleted.",
+        description="If a MetaKegg pipeline run is initialized but not started, it will be considered as abandoned after this time and be deleted.",
     )
     PIPELINE_RESULT_EXPIRED_AFTER_MIN: int = Field(
         default=1440,
-        description="If a pipeline has finished, it will be considered as obsolete after the result will be deleted to save storage. The metadata will still be existent and the user will be notified that the pipeline is expired.",
+        description="If a MetaKegg pipeline has finished, it will be considered as obsolete after the result will be deleted to save storage. The metadata will still be existent and the user will be notified that the pipeline is expired.",
     )
     PIPELINE_RESULT_DELETED_AFTER_MIN: int = Field(
         default=1440,
-        description="If a pipeline has finished and is expired, all its metadata will be wiped after this amounts of minutes after expiring. If a user tries to revisit it, there will be a 404 error.",
+        description="If a MetaKegg pipeline has finished and is expired, all its metadata will be wiped after this amounts of minutes after expiring. If a user tries to revisit it, there will be a 404 error.",
+    )
+
+    CLIENT_CONTACT_EMAIL: Optional[str] = Field(default=None)
+    CLIENT_BUG_REPORT_EMAIL: Optional[str] = Field(default=None)
+    CLIENT_TERMS_AND_CONDITIONS: Optional[str] = Field(default=None)
+    CLIENT_LINK_LIST: Optional[List[Dict[str, str]]] = Field(
+        default_factory=list,
+        examples=[[{"title": "Paper xyz", "link": "https://doi.org/12345"}]],
+    )
+
+    ENABLE_RATE_LIMITING: bool = Field(
+        default=True,
+        description="Only allows a certain amount of API requests. Helps mitigating filling the pipeline queue with garbage and DDOS attacks.",
+    )
+    MAX_PIPELINE_RUNS_PER_HOUR_PER_IP: int = Field(
+        default=5,
+        description="Rate limiting parameter. How many pipeline runs can be started from one IP.",
+    )
+
+    REDIS_CONNECTION_PARAMS: RedisConnectionParams | None = Field(
+        default=None,
+        description="Connection params for a redis the database (client lib used: https://github.com/redis/redis-py) to be used as backend storage/cache. Is not set a python fakeredis process will be started to be used as backend storage/cache.",
+        examples=[RedisConnectionParams(host="localhost", port=6379)],
+    )
+
+    PIPELINE_RUNS_CACHE_DIR: str = Field(
+        default="/tmp/mekewe_cache",
+        description="Storage directory for MetaKEGG Pipeline ressults.",
     )
 
     def get_server_url(self) -> str:
@@ -107,24 +119,32 @@ class Config(BaseSettings):
             port = f":{self.SERVER_LISTENING_PORT}"
         return f"{proto}://{self.SERVER_HOSTNAME}{port}"
 
-    ENABLE_RATE_LIMITING: bool = Field(
-        default=True,
-        description="Only allows a certain amount of API requests. Helps mitigating filling the pipeline queue with garbage and DDOS attacks.",
-    )
-    MAX_PIPELINE_RUNS_PER_HOUR_PER_IP: int = Field(
-        default=5,
-        description="Rate limiting parameter. How many pipeline runs can be started from one IP.",
-    )
+    # Development relevant settings
 
-    REDIS_CONNECTION_PARAMS: RedisConnectionParams | None = Field(
+    ## Client
+    FRONTEND_FILES_DIR: str = Field(
+        description="Files for the web client. Should contain a builded nuxt client (`frontend/.output/public` The directory that contains index.html,...)",
+        default=str(
+            Path(Path(__file__).parent.parent.parent, "frontend/.output/public")
+        ),
+    )
+    CLIENT_URL: Optional[str] = Field(
         default=None,
-        description="Connection params for a redis database to be used as backend storage/cache. Is not set a python fakeredis process will be started to be used as backend storage/cache.",
-        examples=[RedisConnectionParams(host="localhost", port=6379)],
+        description="The URL where the client is hosted. Usually it is hosted with the API Server, but if you develop on the client with a Vuejs/Nuxt Development server, you may want to change this.",
+        examples=["http://localhost:3000"],
     )
 
-    PIPELINE_RUNS_CACHE_DIR: str = Field(
-        default="/tmp/mekewe_cache",
-        description="Storage directory for MetaKEGG Pipeline ressults.",
+    @model_validator(mode="after")
+    def set_empty_client_url(self: Self):
+        if self.CLIENT_URL is None:
+            self.CLIENT_URL = self.get_server_url()
+        return self
+
+    ## Server
+
+    SERVER_UVICORN_LOG_LEVEL: Optional[str] = Field(
+        default=None,
+        description="The log level of the uvicorn web server. If not defined it will be the same as LOG_LEVEL.",
     )
 
     DUMP_OPEN_API_SPECS_ON_BOOT: Optional[bool] = Field(
@@ -139,16 +159,15 @@ class Config(BaseSettings):
         default=3, description=""
     )
 
-    CLIENT_CONTACT_EMAIL: Optional[str] = Field(default=None)
-    CLIENT_BUG_REPORT_EMAIL: Optional[str] = Field(default=None)
-    CLIENT_TERMS_AND_CONDITIONS: Optional[str] = Field(default=None)
-    CLIENT_LINK_LIST: Optional[List[Dict[str, str]]] = Field(
-        default_factory=list,
-        examples=[[{"title": "Paper xyz", "link": "https://doi.org/12345"}]],
-    )
-
     class Config:
         env_nested_delimiter = "__"
         env_file = env_file_path
         env_file_encoding = "utf-8"
         extra = "ignore"
+
+
+def get_config() -> Config:
+    if Path(yaml_file_path).exists():
+        return YamlSettingsPlus(Config, yaml_file_path).get_config()
+    else:
+        return Config()

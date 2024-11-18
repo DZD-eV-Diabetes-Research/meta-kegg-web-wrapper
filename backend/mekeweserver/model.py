@@ -19,12 +19,12 @@ from typing_extensions import Self
 from pydantic import BaseModel, Field, field_serializer, field_validator, create_model
 import uuid
 from enum import Enum
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 import datetime
 from pathlib import Path, PurePath
 from metaKEGG import PipelineAsync
 
-config = Config()
+config: Config = get_config()
 
 
 class MetaKeggPipelineAnalysisMethods(Enum):
@@ -173,6 +173,9 @@ class MetaKeggClientConfig(BaseModel):
     pipeline_ticket_expire_time_sec: int = Field(
         description="Time how long a Pipeline ticket is valid. This is only for informational purposes as the backend is handling ticket expiring.",
         default=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN * 60,
+    )
+    entry_text: Optional[str] = Field(
+        default="Lorem ipsum dolor sit amet, article sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata documentation sanctus est Lorem ipsum dolor sit amet. Help"
     )
 
 
@@ -359,11 +362,14 @@ class MetaKeggPipelineInputParamsValuesUpdate(BaseModel):
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
 
+MetaKeggPipelineDefStates = Literal[
+    "initialized", "queued", "running", "failed", "success", "expired"
+]
+
+
 class MetaKeggPipelineDef(BaseModel):
     ticket: MetaKeggPipelineTicket
-    state: Literal[
-        "initialized", "queued", "running", "failed", "success", "expired"
-    ] = Field(
+    state: MetaKeggPipelineDefStates = Field(
         default="initialized",
         description=f"When a new pipeline run is started it will be `queued` first. After there is slot free in the background worker it start `running`. based on the failure or success of this run the state will be `failed` or `success`. The result of a pipeline run will be cleaned/deleted after {config.PIPELINE_RESULT_EXPIRED_AFTER_MIN} minutes and not be available anymore. After that the state will be `expired`",
     )

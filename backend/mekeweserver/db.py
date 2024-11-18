@@ -5,10 +5,10 @@ import redis
 from redis.exceptions import ConnectionError
 import time
 from mekeweserver.log import get_logger
-from mekeweserver.config import Config, RedisConnectionParams
+from mekeweserver.config import Config, get_config, RedisConnectionParams
 import atexit
 
-config = Config()
+config: Config = get_config()
 log = get_logger()
 
 LOCAL_FAKEREDIS_HOSTNAME = "localhost"
