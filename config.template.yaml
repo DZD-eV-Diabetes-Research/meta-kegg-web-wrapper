@@ -85,25 +85,42 @@ PIPELINE_RESULT_EXPIRED_AFTER_MIN: 1440
 PIPELINE_RESULT_DELETED_AFTER_MIN: 1440
 
 # ## CLIENT_CONTACT_EMAIL ###
-# Type:      str
-# Required:  False
-# Default:   null/None
-# Env-var:   'CLIENT_CONTACT_EMAIL'
+# Type:         str
+# Required:     False
+# Default:      null/None
+# Env-var:      'CLIENT_CONTACT_EMAIL'
+# Description:  A email address a contact shown on the main page of the webclient
 CLIENT_CONTACT_EMAIL:
 
 # ## CLIENT_BUG_REPORT_EMAIL ###
-# Type:      str
-# Required:  False
-# Default:   null/None
-# Env-var:   'CLIENT_BUG_REPORT_EMAIL'
+# Type:         str
+# Required:     False
+# Default:      null/None
+# Env-var:      'CLIENT_BUG_REPORT_EMAIL'
+# Description:  A email address a contact shown when an errors occurs in the webclient
 CLIENT_BUG_REPORT_EMAIL:
+
+# ## CLIENT_ENTRY_TEXT ###
+# Type:         str
+# Required:     False
+# Default:      "Lorem ipsum dolor sit amet, article sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata documentation sanctus est Lorem ipsum dolor sit amet. Help"
+# Env-var:      'CLIENT_ENTRY_TEXT'
+# Description:  A text that will be shown at the top on the main page of the webclient
+CLIENT_ENTRY_TEXT: Lorem ipsum dolor sit amet, article sadipscing elitr, sed diam
+  nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
+  voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd
+  gubergren, no sea takimata documentation sanctus est Lorem ipsum dolor sit amet.
+  Help
 
 # ## CLIENT_TERMS_AND_CONDITIONS ###
 # Type:      str
 # Required:  False
-# Default:   null/None
+# Default:   "We are not responsible for the content uploaded by users. Uploaded files are processed and deleted as quickly as possible. While we take measures to ensure file confidentiality, we cannot guarantee absolute security or prevent potential breaches."
 # Env-var:   'CLIENT_TERMS_AND_CONDITIONS'
-CLIENT_TERMS_AND_CONDITIONS:
+CLIENT_TERMS_AND_CONDITIONS: We are not responsible for the content uploaded by users.
+  Uploaded files are processed and deleted as quickly as possible. While we take measures
+  to ensure file confidentiality, we cannot guarantee absolute security or prevent
+  potential breaches.
 
 # ## CLIENT_LINK_LIST ###
 # Type:      List of Dictionary of (str,str)

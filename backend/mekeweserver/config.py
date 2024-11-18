@@ -79,9 +79,21 @@ class Config(BaseSettings):
         description="If a MetaKegg pipeline has finished and is expired, all its metadata will be wiped after this amounts of minutes after expiring. If a user tries to revisit it, there will be a 404 error.",
     )
 
-    CLIENT_CONTACT_EMAIL: Optional[str] = Field(default=None)
-    CLIENT_BUG_REPORT_EMAIL: Optional[str] = Field(default=None)
-    CLIENT_TERMS_AND_CONDITIONS: Optional[str] = Field(default=None)
+    CLIENT_CONTACT_EMAIL: Optional[str] = Field(
+        default=None,
+        description="A email address a contact shown on the main page of the webclient",
+    )
+    CLIENT_BUG_REPORT_EMAIL: Optional[str] = Field(
+        default=None,
+        description="A email address a contact shown when an errors occurs in the webclient",
+    )
+    CLIENT_ENTRY_TEXT: Optional[str] = Field(
+        description="A text that will be shown at the top on the main page of the webclient",
+        default="Lorem ipsum dolor sit amet, article sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata documentation sanctus est Lorem ipsum dolor sit amet. Help",
+    )
+    CLIENT_TERMS_AND_CONDITIONS: Optional[str] = Field(
+        default="We are not responsible for the content uploaded by users. Uploaded files are processed and deleted as quickly as possible. While we take measures to ensure file confidentiality, we cannot guarantee absolute security or prevent potential breaches."
+    )
     CLIENT_LINK_LIST: Optional[List[Dict[str, str]]] = Field(
         default_factory=list,
         examples=[[{"title": "Paper xyz", "link": "https://doi.org/12345"}]],
