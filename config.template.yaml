@@ -103,14 +103,11 @@ CLIENT_BUG_REPORT_EMAIL:
 # ## CLIENT_ENTRY_TEXT ###
 # Type:         str
 # Required:     False
-# Default:      "Lorem ipsum dolor sit amet, article sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata documentation sanctus est Lorem ipsum dolor sit amet. Help"
+# Default:      "I am the entry text. You can configure me via the config variable ENTRY_TEXT. No developer needs to be harmed for that."
 # Env-var:      'CLIENT_ENTRY_TEXT'
 # Description:  A text that will be shown at the top on the main page of the webclient
-CLIENT_ENTRY_TEXT: Lorem ipsum dolor sit amet, article sadipscing elitr, sed diam
-  nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
-  voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd
-  gubergren, no sea takimata documentation sanctus est Lorem ipsum dolor sit amet.
-  Help
+CLIENT_ENTRY_TEXT: I am the entry text. You can configure me via the config variable
+  ENTRY_TEXT. No developer needs to be harmed for that.
 
 # ## CLIENT_TERMS_AND_CONDITIONS ###
 # Type:      str
@@ -144,14 +141,14 @@ CLIENT_LINK_LIST:
     # Type:       Dictionary of (str,str)
     # Required:   True
     # Env-var:    'CLIENT_LINK_LIST__<list-index>__<dict-key>'
-    title: Paper bla
+    title: I am configureable link list via 'CLIENT_LINK_LIST'
 
     # ## link ###
     # YAML-path:  CLIENT_LINK_LIST.[0].['link']
     # Type:       Dictionary of (str,str)
     # Required:   True
     # Env-var:    'CLIENT_LINK_LIST__<list-index>__<dict-key>'
-    link: https://doi.org/10.1017/S1930297500006999
+    link: https://anylink.com
 
   # ## List[1] ###
   # YAML-path:  CLIENT_LINK_LIST.[1]
@@ -165,10 +162,31 @@ CLIENT_LINK_LIST:
     # Type:       Dictionary of (str,str)
     # Required:   True
     # Env-var:    'CLIENT_LINK_LIST__<list-index>__<dict-key>'
-    title: Other Link
+    title: Paper
 
     # ## link ###
     # YAML-path:  CLIENT_LINK_LIST.[1].['link']
+    # Type:       Dictionary of (str,str)
+    # Required:   True
+    # Env-var:    'CLIENT_LINK_LIST__<list-index>__<dict-key>'
+    link: https://doi.org/10.1017/S1930297500006999
+
+  # ## List[2] ###
+  # YAML-path:  CLIENT_LINK_LIST.[2]
+  # Type:       Dictionary of (str,str)
+  # Required:   False
+  # Env-var:    'CLIENT_LINK_LIST__<list-index>'
+  -
+
+    # ## title ###
+    # YAML-path:  CLIENT_LINK_LIST.[2].['title']
+    # Type:       Dictionary of (str,str)
+    # Required:   True
+    # Env-var:    'CLIENT_LINK_LIST__<list-index>__<dict-key>'
+    title: Other Link
+
+    # ## link ###
+    # YAML-path:  CLIENT_LINK_LIST.[2].['link']
     # Type:       Dictionary of (str,str)
     # Required:   True
     # Env-var:    'CLIENT_LINK_LIST__<list-index>__<dict-key>'
