@@ -29,11 +29,11 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from multiprocessing import Process
 
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 from mekeweserver.db import get_redis_client
 from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 
-config = Config()
+config: Config = get_config()
 
 from metaKEGG import PipelineAsync
 from mekeweserver.model import (

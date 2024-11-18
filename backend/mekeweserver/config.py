@@ -3,6 +3,7 @@ import uuid
 from typing import Literal, Optional, TypedDict, List, Dict
 from pathlib import Path, PurePath
 from typing_extensions import Self
+from psyplus import YamlSettingsPlus
 from pydantic import (
     Field,
     AnyUrl,
@@ -14,8 +15,14 @@ from pydantic import (
 from pydantic_settings import BaseSettings
 import socket
 
+
 env_file_path = os.environ.get(
-    "MEKEWESERVER_DOT_ENV_FILE", Path(__file__).parent / ".env"
+    "MEKEWESERVER_DOT_ENV_FILE", PurePath(Path(__file__).parent, ".env")
+)
+
+yaml_file_path = os.environ.get(
+    "MEKEWESERVER_YAML_CONFIG_FILE",
+    PurePath(Path(__file__).parent.parent.parent, "config.yaml"),
 )
 
 
@@ -152,3 +159,10 @@ class Config(BaseSettings):
         env_file = env_file_path
         env_file_encoding = "utf-8"
         extra = "ignore"
+
+
+def get_config() -> Config:
+    if Path(yaml_file_path).exists():
+        return YamlSettingsPlus(Config, yaml_file_path).get_config()
+    else:
+        return Config()

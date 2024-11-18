@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 import requests
 import json
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 
 MEKEWE_ACCESS_TOKEN_ENV_NAME = "MEKEWE_ACCESS_TOKEN"
 

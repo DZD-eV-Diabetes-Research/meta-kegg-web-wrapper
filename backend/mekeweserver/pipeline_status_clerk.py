@@ -14,10 +14,10 @@ from mekeweserver.model import (
     MetaKeggPipelineAnalysisMethodDocs,
     MetaKeggPipelineInputParamsValues,
 )
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
 
-config = Config()
+config: Config = get_config()
 log = get_logger()
 
 

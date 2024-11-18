@@ -23,9 +23,9 @@ from mekeweserver.log import get_logger
 
 
 def dump_open_api_spec(app: FastAPI):
-    from mekeweserver.config import Config
+    from mekeweserver.config import Config, get_config
 
-    config = Config()
+    config: Config = get_config()
     if config.DUMP_OPEN_API_SPECS_ON_BOOT:
         path = Path(f"{Path(__file__).parent}/../../openapi.json")
         if config.DUMP_OPEN_API_SPECS_ON_BOOT_DIR is not None:
@@ -53,9 +53,9 @@ def dump_open_api_spec(app: FastAPI):
 def run_server(env: Dict = None):
     if env:
         os.environ = os.environ.copy() | env
-    from mekeweserver.config import Config
+    from mekeweserver.config import Config, get_config
 
-    config = Config()
+    config: Config = get_config()
     import getversion
     import mekeweserver
 

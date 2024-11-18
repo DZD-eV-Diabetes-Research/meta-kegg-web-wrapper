@@ -8,9 +8,9 @@ import uuid
 
 from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 from mekeweserver.model import MetaKeggPipelineDef
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 
-config = Config()
+config: Config = get_config()
 
 
 class OutputCatcher:

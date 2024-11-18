@@ -14,10 +14,10 @@ from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 from mekeweserver.db import get_redis_client
 
 from mekeweserver.log import get_logger
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 from mekeweserver.pipeline_worker.pipeline_processor import MetakeggPipelineProcessor
 
-config = Config()
+config: Config = get_config()
 log = get_logger()
 
 

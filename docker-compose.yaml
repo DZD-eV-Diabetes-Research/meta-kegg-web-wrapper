@@ -1,0 +1,28 @@
+services:
+  metakegg:
+    build: .
+    restart: always
+    ports:
+      - 8282:8282
+    environment:
+      - REDIS_CONNECTION_PARAMS__host=redis
+      - REDIS_CONNECTION_PARAMS__port=${REDIS_HOST_PASSWORD:-PLACEHOLDERPASSWORD}
+      - REDIS_CONNECTION_PARAMS__password
+  redis:
+    image: redis:alpine
+    restart: always
+    command: /bin/sh -c "redis-server --requirepass ${REDIS_HOST_PASSWORD:-PLACEHOLDERPASSWORD}"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "-a",
+          "${REDIS_HOST_PASSWORD:-PLACEHOLDERPASSWORD}",
+          "--raw",
+          "incr",
+          "ping"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5

@@ -14,12 +14,12 @@ from slowapi.errors import RateLimitExceeded
 # from fastapi.security import
 
 import mekeweserver
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
 
 
 log = get_logger()
-config = Config()
+config: Config = get_config()
 
 
 def _add_api_middleware(app: FastAPI):

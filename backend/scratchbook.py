@@ -1,3 +1,6 @@
+# This file just contains some python scratchbook code and was just for testing little concepts during dev
+
+
 def type_dict_settings_env_var_test():
     from pydantic import BaseModel
     from pydantic_settings import BaseSettings
@@ -17,7 +20,7 @@ def type_dict_settings_env_var_test():
             env_prefix = "MYAPP_"  # environment variable prefix (e.g., MYAPP_REDIS_CONNECT_PARAMS_HOST)
             env_nested_delimiter = "__"
 
-    config = Config()
+    config: Config = get_config()
     print(config.model_dump())
 
 

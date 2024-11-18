@@ -19,12 +19,12 @@ from typing_extensions import Self
 from pydantic import BaseModel, Field, field_serializer, field_validator, create_model
 import uuid
 from enum import Enum
-from mekeweserver.config import Config
+from mekeweserver.config import Config, get_config
 import datetime
 from pathlib import Path, PurePath
 from metaKEGG import PipelineAsync
 
-config = Config()
+config: Config = get_config()
 
 
 class MetaKeggPipelineAnalysisMethods(Enum):

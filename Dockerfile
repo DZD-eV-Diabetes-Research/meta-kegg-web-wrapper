@@ -44,13 +44,13 @@ COPY .git $BASEDIR/.git
 RUN echo "__version__ = '$(python -m setuptools_scm 2>/dev/null | tail -n 1)'" > $BASEDIR/mekeweserver/__version__.py
 # Remove git folder
 RUN rm -r $BASEDIR/.git
-
+RUN mkdir /config
 # set base config
 WORKDIR $BASEDIR/mekeweserver
 # set base config
 ENV SERVER_LISTENING_HOST=0.0.0.0
 ENV SERVER_HOSTNAME=localhost
 ENV PIPELINE_RUNS_RESULT_CACHE_DIR=$BASEDIR/data
-
+ENV MEKEWESERVER_YAML_CONFIG_FILE=/config/config.yaml
 ENTRYPOINT ["python", "./main.py"]
 #CMD [ "python", "./main.py" ]
