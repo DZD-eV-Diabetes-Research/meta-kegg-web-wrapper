@@ -22,7 +22,7 @@ Web interfacec for https://github.com/dife-bioinformatics/metaKEGG
     - [Start](#start-1)
     - [Usage](#usage-2)
 - [Configuration](#configuration)
-  - [Via Environemnt Variable](#via-environemnt-variable)
+  - [Via environment Variable](#via-environment-variable)
   - [Via Yaml file](#via-yaml-file)
     - [Local](#local)
     - [Docker](#docker)
@@ -150,7 +150,7 @@ MetaKegg has a range of configuration variables. Most are set to sane default va
 
 Have a look at [config.template.yaml](config.template.yaml) to see a template with all possible configuration parameters.
 
-## Via Environemnt Variable
+## Via environment Variable
 
 You can set any configuration variable via env vars. This is convenient via Docker
 
