@@ -174,6 +174,9 @@ class MetaKeggClientConfig(BaseModel):
         description="Time how long a Pipeline ticket is valid. This is only for informational purposes as the backend is handling ticket expiring.",
         default=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN * 60,
     )
+    entry_text: Optional[str] = Field(
+        default="Lorem ipsum dolor sit amet, article sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata documentation sanctus est Lorem ipsum dolor sit amet. Help"
+    )
 
 
 class MetaKeggClientLink(BaseModel):
