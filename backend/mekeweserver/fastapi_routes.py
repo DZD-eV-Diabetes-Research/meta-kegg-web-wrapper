@@ -9,6 +9,7 @@ from typing import (
     get_args,
     Union,
 )
+from pathlib import Path
 import os
 import pydantic
 import uuid
@@ -337,6 +338,8 @@ def get_client_router(app: FastAPI) -> APIRouter:
     async def serve_frontend(path_name: Optional[str] = None):
         if path_name:
             file = os.path.join(config.FRONTEND_FILES_DIR, path_name)
+            if not Path(file).exists():
+                file = os.path.join(config.FRONTEND_FILES_DIR, "index.html")
         else:
             file = os.path.join(config.FRONTEND_FILES_DIR, "index.html")
         return FileResponse(file)
