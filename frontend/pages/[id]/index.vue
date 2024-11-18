@@ -36,7 +36,17 @@
                 </UButton>
             </div>
             <div style="display: flex; justify-content: center; margin-bottom: 0.5%;">
-                <UCheckbox label="Accept the AGB" v-model="acceptAGB" required :disabled="acceptAGB" />
+                <UCheckbox v-model="acceptAGB" :disabled="acceptAGB" />
+                <label for="acceptAGB" style="padding-left: 0.5%; padding-right: 0.25%">Accept the </label>
+                <UButton variant="link" size="xl" :padded="false" @click="showAGBModal = true">AGB</UButton>
+                <UModal v-model="showAGBModal">
+                    <div class="p-4">
+                        <Placeholder class="h-48" />
+                        <div style="text-align: center;">
+                            {{ config.terms_and_conditions }}
+                        </div>
+                    </div>
+                </UModal>
             </div>
             <div v-if="pipelineStatus?.pipeline_input_file_names?.length > 0">
                 <p> Uploaded Files </p>
@@ -139,8 +149,7 @@
             <div v-if="!errorMessage">
                 <div v-if="pipelineStatus?.state === 'queued'">
                     <div style="margin: 2% 0%;">
-                        <p>We are currently experiencing something that can only be called an "Andrang" please be
-                            patient</p>
+                        <p>We are currently experiencing a high number of requests. You are placed in a queue, please be patient.</p>
                         <UProgress :value="pipeLineProgress" />
                         <div style="text-align: right; color: #31c363;">
                             <p>Your current place is {{ pipelineStatus?.place_in_queue }} out of {{ maxPlace }}</p>
@@ -168,6 +177,17 @@
                     <template #item="{ item }">
                         <div style="text-align: left;">
                             <p style="color: red;" v-html="item.content" />
+                            <br>
+                            <div
+                                style="display: flex; justify-content: center; align-items: center; height: 100%; width: 100%;">
+                                <div style="border: solid 1px; padding: 10px;">
+                                    <a class="text-3xl"
+                                        href="mailto:{{ config.bug_report_email }}?subject='Error Metakegg'&body='{{ item.content }}'">
+                                        Send a mail to our support
+                                        <UIcon name="i-heroicons-paper-airplane" class="w-5 h-5" />
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </template>
                 </UAccordion>
@@ -195,6 +215,9 @@ interface AnalysisMethods {
     internal_id: number,
     desc: string
 }
+
+const showAGBModal = ref(false)
+
 
 const ticket_id = route.params.id
 
