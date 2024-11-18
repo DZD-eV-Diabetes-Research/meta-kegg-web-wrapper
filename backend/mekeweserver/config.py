@@ -89,7 +89,7 @@ class Config(BaseSettings):
     )
     CLIENT_ENTRY_TEXT: Optional[str] = Field(
         description="A text that will be shown at the top on the main page of the webclient",
-        default="Lorem ipsum dolor sit amet, article sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata documentation sanctus est Lorem ipsum dolor sit amet. Help",
+        default="I am the entry text. You can configure me via the config variable ENTRY_TEXT. No developer needs to be harmed for that.",
     )
     CLIENT_TERMS_AND_CONDITIONS: Optional[str] = Field(
         default="We are not responsible for the content uploaded by users. Uploaded files are processed and deleted as quickly as possible. While we take measures to ensure file confidentiality, we cannot guarantee absolute security or prevent potential breaches."
