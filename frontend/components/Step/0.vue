@@ -1,6 +1,6 @@
 <template>
     <div class="step-box">
-        <h1 class="text-3xl mb-6">Step 0: Copy Your MetaKegg-URL</h1>
+        <h1 class="text-3xl">Step 0: Copy Your MetaKegg-URL</h1>
     </div>
     <UButton :label="url.toString()" color="gray" @click="copyToClipboard">
         <template #trailing>
@@ -17,9 +17,7 @@
 
 <script setup lang="ts">
 const url = useRequestURL()
-
 const { copy } = useClipboard();
-
 const icon = ref("i-heroicons-clipboard-document");
 const copyMessage = ref("");
 const copyProgress = ref(0);
@@ -74,7 +72,6 @@ const copyToClipboard = async () => {
 .copy-message-container[style*="display: none"] {
     opacity: 0;
 }
-
 
 .notification-box {
     position: fixed;

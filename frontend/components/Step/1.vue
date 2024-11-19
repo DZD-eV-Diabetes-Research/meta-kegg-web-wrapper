@@ -55,15 +55,13 @@ function uncheckedAGB() {
     alert("To upload files you must accept the AGBs")
 }
 
-const formDataCheck = ref(false)
-
 async function printUploadChange(event: Event) {
     const input = event.target as HTMLInputElement
 
     if (input.files && input.files.length > 0) {
         const formData = new FormData()
         formData.append('file', input.files[0])
-        formDataCheck.value = true
+        pipelineStore.uploadCheck = true
 
         await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/upload`, {
             method: 'POST',
@@ -71,8 +69,6 @@ async function printUploadChange(event: Event) {
         })
     }
     const status = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
-    console.log(status);
-
     pipelineStore.pipelineStatus = status
 }
 

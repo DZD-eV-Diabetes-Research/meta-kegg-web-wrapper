@@ -80,6 +80,27 @@ watch(() => pipelineStore.pipelineStatus?.pipeline_params, (newParams) => {
 }, { deep: true, immediate: true });
 
 
+
+onMounted(() => {
+    if (pipelineStore.parameters) {
+        pipelineStore.globalParams  = pipelineStore.parameters.global_params || [];
+        pipelineStore.methodSpecificParams  = pipelineStore.parameters.method_specific_params || [];
+        initializeFormState();
+    }
+});
+
+onMounted(async () => {
+    if (pipelineStore.selectedMethod) {
+        await updateFormForMethod(pipelineStore.selectedMethod);
+    }
+});
+
+watch(() => pipelineStore.selectedMethod, async (newMethod) => {
+    if (newMethod) {
+        await updateFormForMethod(newMethod);
+    }
+});
+
 </script>
 
 <style scoped></style>

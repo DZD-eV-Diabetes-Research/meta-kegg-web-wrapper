@@ -151,7 +151,6 @@ function getInputType(fieldType: string): string {
     }
 }
 
-
 async function getStatus() {
     pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/status`)
 }
