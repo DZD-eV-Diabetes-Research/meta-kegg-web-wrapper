@@ -16,8 +16,10 @@
         </div>
         <div
             v-else-if="pipelineStore.isLoading && pipelineStore.pipelineStart && pipelineStore.pipelineStatus?.state === 'running'">
-            <p style="margin-bottom: 0.5%;">The monkeys are busy in the background please be patient</p>
+            <div style="margin: 2% 0%;">
+            <p>The monkeys are busy in the background please be patient</p>
             <UProgress animation="carousel" />
+            </div>
         </div>
         <div v-else-if="!pipelineStore.isLoading && pipelineStore.pipelineStatus?.state === 'success'">
             <UButton @click="downloadFile" variant="outline" label="Your File">
