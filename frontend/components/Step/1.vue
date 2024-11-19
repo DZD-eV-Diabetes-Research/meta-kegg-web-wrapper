@@ -13,33 +13,38 @@
         </UButton>
     </div>
     <div style="display: flex; justify-content: center; margin-bottom: 0.5%;">
-        <UCheckbox label="Accept the AGB" v-model="acceptAGB" required :disabled="acceptAGB" />
+        <UCheckbox v-model="acceptAGB" :disabled="acceptAGB" />
+        <label for="acceptAGB" style="padding-left: 0.5%; padding-right: 0.25%">Accept the </label>
+        <UButton variant="link" size="xl" :padded="false" @click="showAGBModal = true">AGB</UButton>
+        <UModal v-model="showAGBModal">
+            <div class="p-4">
+                <div style="text-align: center;">
+                    {{ config.terms_and_conditions }}
+                </div>
+            </div>
+        </UModal>
     </div>
-    <div v-if="pipelineStatus?.pipeline_input_file_names?.length > 0">
+    <div v-if="pipelineStore.pipelineStatus?.pipeline_input_file_names?.length > 0">
         <p> Uploaded Files </p>
-        <p v-for="item in pipelineStatus?.pipeline_input_file_names" key="item">{{ item }}</p>
+        <p v-for="item in pipelineStore.pipelineStatus?.pipeline_input_file_names" key="item">{{ item }}</p>
     </div>
 </template>
 
 <script setup lang="ts">
 
-const route = useRoute()
-const ticket_id = route.params.id
-
+const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
-
-const { data: pipelineStatus, error: statusError } = await useFetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
-
 const acceptAGB = ref(false)
+const showAGBModal = ref(false)
+const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
 
 
-
-watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
+watch(() => pipelineStore.pipelineStatus?.pipeline_input_file_names, (newValue) => {
     acceptAGB.value = newValue?.length > 0
 }, { immediate: true })
 
 const inputLabel = computed(() => {
-    if (pipelineStatus.value?.pipeline_input_file_names?.length > 0) {
+    if (pipelineStore.pipelineStatus?.pipeline_input_file_names?.length > 0) {
         return "Add an additional File"
     } else {
         return "Select your File"
@@ -52,7 +57,6 @@ function uncheckedAGB() {
 
 const formDataCheck = ref(false)
 
-
 async function printUploadChange(event: Event) {
     const input = event.target as HTMLInputElement
 
@@ -61,13 +65,15 @@ async function printUploadChange(event: Event) {
         formData.append('file', input.files[0])
         formDataCheck.value = true
 
-        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/upload`, {
+        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/upload`, {
             method: 'POST',
             body: formData,
         })
     }
-    const status = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
-    pipelineStatus.value = status
+    const status = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
+    console.log(status);
+
+    pipelineStore.pipelineStatus = status
 }
 
 </script>

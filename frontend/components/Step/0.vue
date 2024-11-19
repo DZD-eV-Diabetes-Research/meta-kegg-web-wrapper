@@ -20,7 +20,6 @@ const url = useRequestURL()
 
 const { copy } = useClipboard();
 
-
 const icon = ref("i-heroicons-clipboard-document");
 const copyMessage = ref("");
 const copyProgress = ref(0);

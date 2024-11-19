@@ -6,7 +6,7 @@
         <div>
             <h1 style="margin-top: 1%;" class="text-2xl">Linklist</h1>
             <p v-for="link in links">
-                <NuxtLink style="color: blue":to="link.link" :target="_blank">{{ link.title }}</NuxtLink>
+                <NuxtLink style="color: blue" :to="link.link" target="_blank">{{ link.title }}</NuxtLink>
             </p>
         </div>
     </UIBaseCard>

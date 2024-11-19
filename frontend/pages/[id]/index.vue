@@ -20,120 +20,13 @@
             </div>
         </UIBaseCard>
         <UIBaseCard v-else :narrow-width="true">
-            <Step0 />
+            <Step0/>
             <hr class="custom-hr">
-            <div class="step-box">
-                <h1 class="text-3xl">Step 1: Upload your files</h1>
-            </div>
-            <div v-if="acceptAGB" style="margin-top: 1%; margin-bottom: 0.5%">
-                <UICustomInputField @change="printUploadChange" :label="inputLabel" />
-            </div>
-            <div v-else style="margin-top: 1%; margin-bottom: 0.5%">
-                <UButton label="Select your File" variant="outline" @click="uncheckedAGB">
-                    <template #trailing>
-                        <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
-                    </template>
-                </UButton>
-            </div>
-            <div style="display: flex; justify-content: center; margin-bottom: 0.5%;">
-                <UCheckbox v-model="acceptAGB" :disabled="acceptAGB" />
-                <label for="acceptAGB" style="padding-left: 0.5%; padding-right: 0.25%">Accept the </label>
-                <UButton variant="link" size="xl" :padded="false" @click="showAGBModal = true">AGB</UButton>
-                <UModal v-model="showAGBModal">
-                    <div class="p-4">
-                        <Placeholder class="h-48" />
-                        <div style="text-align: center;">
-                            {{ config.terms_and_conditions }}
-                        </div>
-                    </div>
-                </UModal>
-            </div>
-            <div v-if="pipelineStatus?.pipeline_input_file_names?.length > 0">
-                <p> Uploaded Files </p>
-                <p v-for="item in pipelineStatus?.pipeline_input_file_names" key="item">{{ item }}</p>
-            </div>
+            <Step1/>
             <hr class="custom-hr">
-            <div class="step-box">
-                <h1 class="text-3xl">Step 2: Select an Analysis Method</h1>
-            </div>
-            <h1 v-if="analysisStatus === 'pending'">Loading</h1>
-            <div v-else class="select-container">
-                <USelect v-model="selectedMethod" :options="analysisMethods" option-attribute="display_name"
-                    valueAttribute="name" style="margin-bottom: 1%" @change="getParams" />
-            </div>
+            <Step2/>
             <hr class="custom-hr">
-            <div class="step-box">
-                <h1 class="text-3xl">Step 3: (Optional) Pipeline Parameters</h1>
-            </div>
-            <div style="text-align: left">
-                <UAccordion v-if="globalParams.length > 0 || methodSpecificParams.length > 0" :items="accordionItems">
-                    <template #item="{ item }">
-                        <div
-                            style="border: solid; border-color: #d3f4e1; border-radius: 1%; padding: 2%; background-color: #f6fdf9;">
-                            <UForm :state="formState">
-                                <div v-for="field in globalParams" :key="field.name">
-                                    <UFormGroup
-                                        v-if="field.name !== 'input_label' || selectedMethod === 'multiple_inputs'"
-                                        :label="formatLabel(field.name)" :required="field.required">
-
-                                        <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
-                                            v-model="formState[field.name]"
-                                            :placeholder="field.default?.toString() || ''"
-                                            :type="getInputType(field.type)" @blur="handleBlur(field.name)"
-                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
-
-                                        <UInput
-                                            v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
-                                            v-model="formState[field.name]"
-                                            placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
-                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
-
-                                        <UToggle v-else-if="field.type === 'bool'" v-model="formState[field.name]"
-                                            @blur="handleBlur(field.name)" />
-
-                                        <UTextarea v-else-if="field.type === 'List'" v-model="formState[field.name]"
-                                            placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
-                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
-
-                                        <div v-if="formState[`${field.name}_error`]">
-                                            <span style="color: red;">{{ formState[`${field.name}_error`] }}</span>
-                                        </div>
-                                    </UFormGroup>
-                                </div>
-                                <div v-for="field in methodSpecificParams" :key="field.name">
-                                    <UFormGroup
-                                        v-if="field.name !== 'input_label' || selectedMethod === 'multiple_inputs'"
-                                        :label="formatLabel(field.name)" :required="field.required">
-
-                                        <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
-                                            v-model="formState[field.name]"
-                                            :placeholder="field.default?.toString() || ''"
-                                            :type="getInputType(field.type)" @blur="handleBlur(field.name)"
-                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
-
-                                        <UInput
-                                            v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
-                                            v-model="formState[field.name]"
-                                            placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
-                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
-
-                                        <UToggle v-else-if="field.type === 'bool'" v-model="formState[field.name]"
-                                            @blur="handleBlur(field.name)" />
-
-                                        <UTextarea v-else-if="field.type === 'List'" v-model="formState[field.name]"
-                                            placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
-                                            :color="formState[`${field.name}_error`] ? 'red' : undefined" />
-
-                                        <div v-if="formState[`${field.name}_error`]">
-                                            <span style="color: red;">{{ formState[`${field.name}_error`] }}</span>
-                                        </div>
-                                    </UFormGroup>
-                                </div>
-                            </UForm>
-                        </div>
-                    </template>
-                </UAccordion>
-            </div>
+            <Step3/>
             <hr class="custom-hr">
             <div class="step-box">
                 <h1 class="text-3xl">Step 4: Start the Pipeline</h1>
@@ -147,21 +40,21 @@
                 <h1 class="text-3xl">Step 5: Download your File</h1>
             </div>
             <div v-if="!errorMessage">
-                <div v-if="pipelineStatus?.state === 'queued'">
+                <div v-if="pipelineStore.pipelineStatus?.state === 'queued'">
                     <div style="margin: 2% 0%;">
                         <p>You are placed in a queue, please be patient.
                         </p>
-                        <UProgress :value="pipeLineProgress" />
+                        <UProgress :value="pipelineStore.pipeLineProgress" />
                         <div style="text-align: right; color: #31c363;">
-                            <p>Your current place is {{ pipelineStatus?.place_in_queue + 1 }} out of {{ maxPlace }}</p>
+                            <p>Your current place is {{ pipelineStore.pipelineStatus?.place_in_queue + 1 }} out of {{ maxPlace }}</p>
                         </div>
                     </div>
                 </div>
-                <div v-else-if="isLoading && pipelineStart && pipelineStatus?.state === 'running'">
+                <div v-else-if="isLoading && pipelineStart && pipelineStore.pipelineStatus?.state === 'running'">
                     <p style="margin-bottom: 0.5%;">The monkeys are busy in the background please be patient</p>
                     <UProgress animation="carousel" />
                 </div>
-                <div v-else-if="!isLoading && pipelineStatus?.state === 'success'">
+                <div v-else-if="!isLoading && pipelineStore.pipelineStatus?.state === 'success'">
                     <UButton @click="downloadFile" variant="outline" label="Your File">
                         <template #trailing>
                             <UIcon name="i-heroicons-cloud-arrow-down" class="w-5 h-5" />
@@ -195,14 +88,22 @@
             </div>
         </UIBaseCard>
     </div>
+    {{ pipelineStatus }}
+    <br>
+    <br>
+    {{ pipelineStore.parameters  }}
+    <br>
+    <br>
+    {{ pipelineStore.pipelineStatus  }}
 </template>
 
 <script setup lang="ts">
+
+const pipelineStore = usePipelineStore()
 const url = useRequestURL()
-
 const route = useRoute()
+pipelineStore.ticket_id  = route.params.id as string
 
-const pipeLineProgress = ref(0)
 
 const runtimeConfig = useRuntimeConfig();
 
@@ -218,59 +119,21 @@ interface AnalysisMethods {
     desc: string
 }
 
-const showAGBModal = ref(false)
-
-
-const ticket_id = route.params.id
 
 const selectedMethod = ref("single_input_genes")
 
-const { data: pipelineStatus, error: statusError } = await useFetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
+const { data: pipelineStatus, error: statusError } = await useFetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/status`)
+pipelineStore.pipelineStatus = pipelineStatus
+
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
 const { data: parameters } = await useFetch(`${runtimeConfig.public.baseURL}/api/${selectedMethod.value}/params`)
+pipelineStore.parameters = parameters
 
 const errorStack = ref("")
-
-
 const { data: analysisMethods, error: analysisMethodsError, status: analysisStatus } = await useFetch<AnalysisMethods[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
 
-const acceptAGB = ref(false)
-
-watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
-    acceptAGB.value = newValue?.length > 0
-}, { immediate: true })
-
 const formDataCheck = ref(false)
-
-const inputLabel = computed(() => {
-    if (pipelineStatus.value?.pipeline_input_file_names?.length > 0) {
-        return "Add an additional File"
-    } else {
-        return "Select your File"
-    }
-})
-
-function uncheckedAGB() {
-    alert("To upload files you must accept the AGBs")
-}
-
-async function printUploadChange(event: Event) {
-    const input = event.target as HTMLInputElement
-
-    if (input.files && input.files.length > 0) {
-        const formData = new FormData()
-        formData.append('file', input.files[0])
-        formDataCheck.value = true
-
-        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/upload`, {
-            method: 'POST',
-            body: formData,
-        })
-    }
-    const status = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
-    pipelineStatus.value = status
-}
 
 const errorMessage = ref("")
 const errorMessageDetail = ref("")
@@ -330,36 +193,36 @@ async function startPipeline() {
     }
 
     try {
-        pipelineStatus.value = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/run/${selectedMethod.value}`, {
+        pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/run/${selectedMethod.value}`, {
             method: "POST"
         })
 
-        if (pipelineStatus.value.place_in_queue) {
+        if (pipelineStore.pipelineStatus.place_in_queue) {
 
             if (!isMaxPlaceSet.value) {
-                maxPlace.value = pipelineStatus.value.place_in_queue
+                maxPlace.value = pipelineStore.pipelineStatus.place_in_queue
                 isMaxPlaceSet.value = true
 
 
             }
-            pipeLineProgress.value = Math.round(100 * ((pipelineStatus.value.place_in_queue / maxPlace.value)))
+            pipelineStore.pipeLineProgress = Math.round(100 * ((pipelineStore.pipelineStatus.place_in_queue / maxPlace.value)))
 
         }
 
         await getStatus()
 
-        while (pipelineStatus.value.state !== 'success' && pipelineStatus.value.state !== 'failed') {
+        while (pipelineStore.pipelineStatus.state !== 'success' && pipelineStore.pipelineStatus.state !== 'failed') {
             await new Promise(resolve => setTimeout(resolve, 5000))
             await getStatus()
         }
 
-        if (pipelineStatus.value.state === 'success') {
+        if (pipelineStore.pipelineStatus.state === 'success') {
             downloadStatus.value = true
         }
 
-        if (pipelineStatus.value.error) {
-            errorMessage.value = pipelineStatus.value.error
-            errorMessageDetail.value = pipelineStatus.value.error_traceback.replace(/\n/g, `<br>`)
+        if (pipelineStore.pipelineStatus.error) {
+            errorMessage.value = pipelineStore.pipelineStatus.error
+            errorMessageDetail.value = pipelineStore.pipelineStatus.error_traceback.replace(/\n/g, `<br>`)
         }
 
 
@@ -372,37 +235,18 @@ async function startPipeline() {
 }
 
 async function getStatus() {
-    pipelineStatus.value = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
+    pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/status`)
 
-    if (pipelineStatus.value.place_in_queue) {
-        pipeLineProgress.value = Math.round(100 * ((pipelineStatus.value.place_in_queue / maxPlace.value)))
+    if (pipelineStore.pipelineStatus.place_in_queue) {
+        pipelineStore.pipeLineProgress = Math.round(100 * ((pipelineStore.pipelineStatus.place_in_queue / maxPlace.value)))
     }
-    errorStack.value = pipelineStatus.value.error_traceback
+    errorStack.value = pipelineStore.pipelineStatus.error_traceback
 }
 
-
-const accordionItems = ref([
-    {
-        label: 'Pipeline Parameter Setting',
-        content: 'Form will be rendered here'
-    }
-]);
 
 function formatLabel(key: string): string {
     return key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
-
-function getInputType(fieldType: string): string {
-    switch (fieldType) {
-        case 'int':
-            return 'number';
-        case 'float':
-            return 'number';
-        default:
-            return 'text';
-    }
-}
-
 
 const globalParams = ref([])
 const methodSpecificParams = ref([]);
@@ -410,9 +254,9 @@ const methodSpecificParams = ref([]);
 const formState = ref({});
 
 onMounted(() => {
-    if (parameters.value) {
-        globalParams.value = parameters.value.global_params || [];
-        methodSpecificParams.value = parameters.value.method_specific_params || [];
+    if (pipelineStore.parameters) {
+        globalParams.value = pipelineStore.parameters.global_params || [];
+        methodSpecificParams.value = pipelineStore.parameters.method_specific_params || [];
         initializeFormState();
     }
 });
@@ -446,8 +290,8 @@ async function updateFormForMethod(method) {
 function initializeFormState() {
     formState.value = {};
 
-    if (pipelineStatus.value && pipelineStatus.value.pipeline_params) {
-        Object.entries(pipelineStatus.value.pipeline_params).forEach(([key, value]) => {
+    if (pipelineStore.pipelineStatus && pipelineStore.pipelineStatus.pipeline_params) {
+        Object.entries(pipelineStore.pipelineStatus.pipeline_params).forEach(([key, value]) => {
             formState.value[key] = value;
         });
     }
@@ -463,7 +307,7 @@ function initializeFormState() {
         }
     });
 }
-watch(() => pipelineStatus.value?.pipeline_params, (newParams) => {
+watch(() => pipelineStore.pipelineStatus?.pipeline_params, (newParams) => {
     if (newParams) {
         Object.entries(newParams).forEach(([key, value]) => {
             formState.value[key] = value;
@@ -506,7 +350,7 @@ async function handleBlur(fieldName) {
     const valueToSend = formState.value[fieldName];
 
     try {
-        const url = `${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}`;
+        const url = `${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }`;
         const isGlobalParam = globalParams.value.some(param => param.name === fieldName);
         const body = {
             global_params: {},
@@ -540,13 +384,13 @@ watch(selectedMethod, (newMethod) => {
 });
 async function downloadFile() {
     try {
-        const downloadedFile = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/result`)
+        const downloadedFile = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/result`)
 
         const blobUrl = URL.createObjectURL(downloadedFile);
 
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = pipelineStatus.value.pipeline_output_zip_file_name + '.zip';
+        link.download = pipelineStore.pipelineStatus.pipeline_output_zip_file_name + '.zip';
 
         document.body.appendChild(link);
         link.click();
@@ -567,7 +411,7 @@ async function getParams() {
     await getStatus();
 }
 
-watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
+watch(() => pipelineStore.pipelineStatus?.pipeline_input_file_names, (newValue) => {
     if (newValue && newValue.length > 0) {
         formDataCheck.value = true
     } else {
