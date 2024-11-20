@@ -3,17 +3,11 @@
         <h1 class="text-3xl">Step 4: Start the Pipeline</h1>
     </div>
     <UButton @click="startPipeline">Start run</UButton>
-    <div v-if="requiredFieldsError" class="submit-error-message">
-        {{ requiredFieldsError }}
-    </div>
 </template>
 
 <script setup lang="ts">
 const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
-
-const errorMessage = ref("")
-const errorMessageDetail = ref("")
 
 const downloadStatus = ref(false)
 
@@ -29,18 +23,20 @@ async function startPipeline() {
     pipelineStore.pipelineStart = true
     pipelineStore.isLoading = true
     isMaxPlaceSet.value = false
-    errorMessage.value = ""
-    errorMessageDetail.value = ""
+    pipelineStore.uploadErrorMessage = ""
     requiredFieldsError.value = ""
+    
 
     if (pipelineStore.uploadCheck === false) {
-        errorMessage.value = "You need to upload a file"
+        pipelineStore.uploadErrorMessage = "You need to upload a file"
+        
         pipelineStore.isLoading = false
         pipelineStore.pipelineStart = false
         return
     }
 
     if (!checkRequiredFields()) {
+
         pipelineStore.isLoading = false
         pipelineStore.pipelineStart = false
         return
@@ -51,19 +47,19 @@ async function startPipeline() {
             method: "POST"
         })
 
-        if (pipelineStore.pipelineStatus.place_in_queue) {
+        if (pipelineStore?.pipelineStatus?.place_in_queue) {
 
             if (!isMaxPlaceSet.value) {
                 pipelineStore.maxPlace = pipelineStore.pipelineStatus.place_in_queue
                 isMaxPlaceSet.value = true
             }
 
-            pipelineStore.pipeLineProgress = Math.round(100 * ((pipelineStore.pipelineStatus.place_in_queue / pipelineStore.maxPlace)))
+            pipelineStore.pipeLineProgress = Math.round(100 * ((pipelineStore.pipelineStatus.place_in_queue / pipelineStore.maxPlace!)))
         }
 
         await getStatus()
 
-        while (pipelineStore.pipelineStatus.state !== 'success' && pipelineStore.pipelineStatus.state !== 'failed') {
+        while (pipelineStore?.pipelineStatus?.state !== 'success' && pipelineStore?.pipelineStatus?.state !== 'failed') {
             await new Promise(resolve => setTimeout(resolve, 5000))
             await getStatus()
         }
@@ -74,7 +70,7 @@ async function startPipeline() {
 
         if (pipelineStore.pipelineStatus.error) {
             pipelineStore.errorMessage = pipelineStore.pipelineStatus.error
-            pipelineStore.errorStack = pipelineStore.pipelineStatus.error_traceback.replace(/\n/g, `<br>`)
+            pipelineStore.errorStack = pipelineStore?.pipelineStatus?.error_traceback?.replace(/\n/g, `<br>`) ?? ""
         }
 
 
@@ -87,13 +83,16 @@ async function startPipeline() {
 }
 
 async function getStatus() {
-    pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
+    pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`);
 
-    if (pipelineStore.pipelineStatus.place_in_queue) {
-        pipelineStore.pipeLineProgress = Math.round(100 * ((pipelineStore.pipelineStatus.place_in_queue / pipelineStore.maxPlace)))
+    if (pipelineStore?.pipelineStatus?.place_in_queue) {
+        pipelineStore.pipeLineProgress = Math.round(100 * (pipelineStore.pipelineStatus.place_in_queue / pipelineStore.maxPlace!));
     }
-    pipelineStore.errorMessage = pipelineStore.pipelineStatus.error
-    pipelineStore.errorStack = pipelineStore.pipelineStatus.error_traceback
+
+    if (pipelineStore.pipelineStatus) {
+        pipelineStore.errorMessage = pipelineStore.pipelineStatus.error ?? ""; 
+        pipelineStore.errorStack = pipelineStore.pipelineStatus.error_traceback ?? ""; 
+    }
 }
 
 
@@ -104,7 +103,7 @@ function checkRequiredFields() {
             if (field.type === 'bool') {
                 return pipelineStore.formState[field.name] === undefined;
             } else if (field.is_list) {
-                return Array.isArray(pipelineStore.formState[field.name]) && pipelineStore.formState[field.name].length === 0;
+                return Array.isArray(pipelineStore.formState[field.name]) && pipelineStore?.formState[field.name]?.length === 0;
             } else {
                 return !pipelineStore.formState[field.name] && pipelineStore.formState[field.name] !== false;
             }
@@ -112,7 +111,7 @@ function checkRequiredFields() {
         return false;
     });
 
-    if (emptyRequiredFields.length > 0) {
+    if (emptyRequiredFields.length > 0) {        
         requiredFieldsError.value = `${emptyRequiredFields.length} required field(s) cannot be empty when submitting the form.`;
         return false;
     }
@@ -130,7 +129,7 @@ watch(() => pipelineStore.pipelineStatus?.pipeline_input_file_names, (newValue) 
 }, { deep: true, immediate: true })
 
 
-watch(pipelineStore.selectedMethod, (newMethod) => {
+watch(() => pipelineStore.selectedMethod, (newMethod) => {
     if (newMethod !== 'multiple_inputs') {
         pipelineStore.formState.input_label = ["null"];
     } else {

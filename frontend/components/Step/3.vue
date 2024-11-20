@@ -3,13 +3,15 @@
         <h1 class="text-3xl">Step 3: (Optional) Pipeline Parameters</h1>
     </div>
     <div style="text-align: left">
-        <UAccordion v-if="pipelineStore?.globalParams?.length > 0 || pipelineStore?.methodSpecificParams?.length > 0"
+        <UAccordion
+            v-if="(pipelineStore?.globalParams && typeof pipelineStore.globalParams === 'object' && Object.keys(pipelineStore.globalParams).length > 0) ||
+                (pipelineStore?.methodSpecificParams && typeof pipelineStore.methodSpecificParams === 'object' && Object.keys(pipelineStore.methodSpecificParams).length > 0)"
             :items="accordionItems">
             <template #item="{ item }">
                 <div
                     style="border: solid; border-color: #d3f4e1; border-radius: 1%; padding: 2%; background-color: #f6fdf9;">
                     <UForm :state="pipelineStore.formState">
-                        <div v-for="field in pipelineStore.globalParams" :key="field.name">
+                        <div v-for="field in pipelineStore?.globalParams?.filter(f => f != null)" :key="field.name">
                             <UFormGroup
                                 v-if="field.name !== 'input_label' || pipelineStore.selectedMethod === 'multiple_inputs'"
                                 :label="formatLabel(field.name)" :required="field.required">
@@ -39,8 +41,11 @@
                                 </div>
                             </UFormGroup>
                         </div>
-                        <div v-for="field in pipelineStore.methodSpecificParams" :key="field.name">
-                            <UFormGroup v-if="field.name !== 'input_label' || pipelineStore.selectedMethod === 'multiple_inputs'"
+
+                        <div v-for="field in pipelineStore?.methodSpecificParams?.filter(f => f != null)"
+                            :key="field.name">
+                            <UFormGroup
+                                v-if="field.name !== 'input_label' || pipelineStore.selectedMethod === 'multiple_inputs'"
                                 :label="formatLabel(field.name)" :required="field.required">
 
                                 <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
@@ -80,7 +85,7 @@
 const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
 
-async function handleBlur(fieldName) {
+async function handleBlur(fieldName: string) {
     const allParams = [...pipelineStore.globalParams, ...pipelineStore.methodSpecificParams];
     const field = allParams.find(f => f.name === fieldName);
 
@@ -152,7 +157,7 @@ function getInputType(fieldType: string): string {
 }
 
 async function getStatus() {
-    pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/status`)
+    pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
 }
 
 watch(() => pipelineStore.selectedMethod, (newMethod) => {

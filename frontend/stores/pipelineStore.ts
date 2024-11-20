@@ -10,7 +10,7 @@ export const usePipelineStore = defineStore('PipelineStore', {
             parameters: null as PipelineParams | null,
             globalParams: null as GlobalParams | null,
             isLoading: false,
-            maxPlace: null,
+            maxPlace: null as number | null,
             methodSpecificParams: null as MethodSpecificParams | null,
             pipeLineProgress: 0,
             pipelineStatus: null as PipelineStatus | null,
@@ -18,7 +18,9 @@ export const usePipelineStore = defineStore('PipelineStore', {
             selectedMethod: "single_input_genes",
             ticket_id: "",
             uploadCheck: false,
+            uploadErrorMessage: "",
         }
     },
     persist: true
 })
+

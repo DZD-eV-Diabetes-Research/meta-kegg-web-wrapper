@@ -1,8 +1,8 @@
 <template>
-    <div class="step-box">
+    <div class="step-box" style="">
         <h1 class="text-3xl">Step 5: Download your File</h1>
     </div>
-    <div v-if="!pipelineStore.pipelineStatus.error">
+    <div v-if="!pipelineStore?.pipelineStatus?.error">
         <div v-if="pipelineStore.pipelineStatus?.state === 'queued'">
             <div style="margin: 2% 0%;">
                 <p>You are placed in a queue, please be patient.
@@ -17,8 +17,8 @@
         <div
             v-else-if="pipelineStore.isLoading && pipelineStore.pipelineStart && pipelineStore.pipelineStatus?.state === 'running'">
             <div style="margin: 2% 0%;">
-            <p>The monkeys are busy in the background please be patient</p>
-            <UProgress animation="carousel" />
+                <p>The monkeys are busy in the background please be patient</p>
+                <UProgress animation="carousel" />
             </div>
         </div>
         <div v-else-if="!pipelineStore.isLoading && pipelineStore.pipelineStatus?.state === 'success'">
@@ -43,7 +43,7 @@
                         style="display: flex; justify-content: center; align-items: center; height: 100%; width: 100%;">
                         <div style="border: solid 1px;" class="email-support-container">
                             <a class="text-3xl" style="padding: 15px;"
-                                :href="`mailto:${config.bug_report_email}?subject=Error Metakegg: ${encodeURIComponent(pipelineStore.errorMessage)} &body=During the run of the following URL: %0D%0A %0D%0A ${url.toString()}   %0D%0A %0D%0A The page returned the following %0D%0A%0D%0A Errorstack:  %0D%0A%0D%0A  ${encodeURIComponent(pipelineStore.pipelineStatus.error_traceback)}`">
+                                :href="`mailto:${config?.bug_report_email}?subject=Error Metakegg: ${encodeURIComponent(pipelineStore.errorMessage)} &body=During the run of the following URL: %0D%0A %0D%0A ${url.toString()}   %0D%0A %0D%0A The page returned the following %0D%0A%0D%0A Errorstack:  %0D%0A%0D%0A  ${encodeURIComponent(pipelineStore?.pipelineStatus?.error_traceback)}`">
                                 Send a mail to our support
                                 <UIcon name="i-heroicons-paper-airplane" class="w-5 h-5" />
                             </a>
@@ -53,23 +53,28 @@
             </template>
         </UAccordion>
     </div>
+    <div style="margin: 1%;" v-if="pipelineStore.uploadErrorMessage" class="submit-error-message">
+            <h1 class="text-2xl">{{ pipelineStore.uploadErrorMessage }}</h1>
+        </div>
 </template>
 
 <script setup lang="ts">
+import type { Config } from '~/types';
+
 const url = useRequestURL()
 const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
-const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
+const { data: config } = await useFetch<Config>(`${runtimeConfig.public.baseURL}/config`)
 
 async function downloadFile() {
     try {
-        const downloadedFile = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/result`)
+        const downloadedFile = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/result`)
 
         const blobUrl = URL.createObjectURL(downloadedFile);
 
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = pipelineStore.pipelineStatus.pipeline_output_zip_file_name + '.zip';
+        link.download = pipelineStore?.pipelineStatus?.pipeline_output_zip_file_name + '.zip';
 
         document.body.appendChild(link);
         link.click();
@@ -80,10 +85,16 @@ async function downloadFile() {
         console.error('Download failed:', error);
     }
 }
-
 </script>
 
 <style scoped>
+.submit-error-message {
+    color: red;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    font-weight: bold;
+}
+
 .email-support-container:hover {
     background-color: #f0f0f0;
 }
