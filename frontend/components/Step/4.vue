@@ -3,6 +3,12 @@
         <h1 class="text-3xl">Step 4: Start the Pipeline</h1>
     </div>
     <UButton @click="startPipeline">Start run</UButton>
+    <div style="margin: 1%;" v-if="pipelineStore.uploadErrorMessage" class="submit-error-message">
+            <h1 class="text-2xl">{{ pipelineStore.uploadErrorMessage }}</h1>
+        </div>
+    <div style="margin: 1%;" v-if="pipelineStore.requiredFieldsError" class="submit-error-message">
+            <h1 class="text-2xl">{{ pipelineStore.requiredFieldsError }}</h1>
+        </div>
 </template>
 
 <script setup lang="ts">
@@ -10,9 +16,6 @@ const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
 
 const downloadStatus = ref(false)
-
-const requiredFieldsError = ref('')
-
 const isMaxPlaceSet = ref(false)
 
 async function startPipeline() {
@@ -24,7 +27,7 @@ async function startPipeline() {
     pipelineStore.isLoading = true
     isMaxPlaceSet.value = false
     pipelineStore.uploadErrorMessage = ""
-    requiredFieldsError.value = ""
+    pipelineStore.requiredFieldsError = ""
     
 
     if (pipelineStore.uploadCheck === false) {
@@ -112,11 +115,11 @@ function checkRequiredFields() {
     });
 
     if (emptyRequiredFields.length > 0) {        
-        requiredFieldsError.value = `${emptyRequiredFields.length} required field(s) cannot be empty when submitting the form.`;
+        pipelineStore.requiredFieldsError = `${emptyRequiredFields.length} required field(s) cannot be empty when submitting the form.`;
         return false;
     }
 
-    requiredFieldsError.value = '';
+    pipelineStore.requiredFieldsError = '';
     return true;
 }
 

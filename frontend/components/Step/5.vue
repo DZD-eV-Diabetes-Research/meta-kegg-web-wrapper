@@ -9,7 +9,7 @@
                 </p>
                 <UProgress :value="pipelineStore.pipeLineProgress" />
                 <div style="text-align: right; color: #31c363;">
-                    <p>Your current place is {{ pipelineStore.pipelineStatus?.place_in_queue + 1 }} out of {{
+                    <p>Your current place is {{ pipelineStore.pipelineStatus?.place_in_queue! + 1 }} out of {{
                         pipelineStore.maxPlace }}</p>
                 </div>
             </div>
@@ -53,9 +53,6 @@
             </template>
         </UAccordion>
     </div>
-    <div style="margin: 1%;" v-if="pipelineStore.uploadErrorMessage" class="submit-error-message">
-            <h1 class="text-2xl">{{ pipelineStore.uploadErrorMessage }}</h1>
-        </div>
 </template>
 
 <script setup lang="ts">
@@ -74,7 +71,7 @@ async function downloadFile() {
 
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = pipelineStore?.pipelineStatus?.pipeline_output_zip_file_name + '.zip';
+        link.download = pipelineStore?.pipelineStatus?.pipeline_output_zip_file_name;
 
         document.body.appendChild(link);
         link.click();
@@ -88,13 +85,6 @@ async function downloadFile() {
 </script>
 
 <style scoped>
-.submit-error-message {
-    color: red;
-    margin-bottom: 0.5rem;
-    margin-top: 0.5rem;
-    font-weight: bold;
-}
-
 .email-support-container:hover {
     background-color: #f0f0f0;
 }

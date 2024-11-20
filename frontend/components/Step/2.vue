@@ -47,7 +47,7 @@ function initializeFormState() {
             if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || Array.isArray(value) || value === null) {
                 pipelineStore.formState[key] = value;
             } else {
-                console.warn(`Unexpected type for ${key}:`, value);
+                // console.warn(`Unexpected type for HEY HEY ${key}:`, value);
             }
         });
     }
@@ -94,17 +94,18 @@ watch(() => pipelineStore.selectedMethod, async (newMethod) => {
 watch(() => pipelineStore.pipelineStatus?.pipeline_params, (newParams) => {
     if (newParams) {
         Object.entries(newParams).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-        pipelineStore.formState[key] = value.join(', ');
-    } else if (typeof value === 'string' || typeof value === 'number') {
-        pipelineStore.formState[key] = value;
-    } else {
-        console.warn(`Unexpected type for ${key}:`, value);
-    }
-});
+            if (Array.isArray(value)) {
+                pipelineStore.formState[key] = value.join(', ');
+            } else if (value && typeof value === 'object') {
+                pipelineStore.formState[key] = JSON.stringify(value); 
+            } else if (typeof value === 'string' || typeof value === 'number') {
+                pipelineStore.formState[key] = value;
+            } else {
+                console.warn(`Unexpected type for ${key}:`, value);
+            }
+        });
     }
 }, { deep: true, immediate: true });
-
 
 </script>
 

@@ -15,6 +15,7 @@ export const usePipelineStore = defineStore('PipelineStore', {
             pipeLineProgress: 0,
             pipelineStatus: null as PipelineStatus | null,
             pipelineStart: false,
+            requiredFieldsError: "",
             selectedMethod: "single_input_genes",
             ticket_id: "",
             uploadCheck: false,
