@@ -57,9 +57,13 @@ def _add_rate_limiter(app: FastAPI):
 
 
 def get_fastapi_app(background_worker: Process) -> FastAPI:
+    try:
+        v = getversion.get_module_version(mekeweserver)[0]
+    except:
+        v = "unknown"
     app = FastAPI(
         title="MetaKegg Web REST API",
-        version=getversion.get_module_version(mekeweserver)[0],
+        version=v,
         # openapi_url=f"{settings.api_v1_prefix}/openapi.json",
         # debug=settings.debug,
     )
