@@ -56,6 +56,7 @@ from mekeweserver.model import (
     get_param_model,
     GlobalParamModel,
     GlobalParamModelUpdate,
+    MetaKeggPipelineDefStates,
 )
 
 
@@ -170,6 +171,31 @@ def get_api_router(app: FastAPI) -> APIRouter:
         return ticket
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}
+
+    @mekewe_router.delete(
+        "/pipeline/{pipeline_ticket_id}",
+        description="""
+        Delete an existing pipeline definiton with all input and output files.""",
+        tags=["Pipeline"],
+    )
+    @limiter.limit(f"10/minute")
+    async def delete_a_metakegg_pipeline_run_definition(
+        request: Request,
+        pipeline_ticket_id: uuid.UUID,
+    ):
+        pipeline_status_manager = MetaKeggPipelineStateManager(redis_client=redis)
+        pipeline_status = pipeline_status_manager.get_pipeline_run_definition(
+            pipeline_ticket_id,
+            raise_exception_if_not_exists=pipelinerun_not_found_exception,
+        )
+        if pipeline_status.state in ["running", "queued"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pipeline is not in an updatable state. Wait for it to be finished.",
+            )
+        pipeline_status_manager.wipe_pipeline_run(pipeline_ticket_id)
+        pipeline_status_manager.delete_pipeline_status(pipeline_ticket_id)
+
     @mekewe_router.patch(
         "/pipeline/{pipeline_ticket_id}",
         response_model=MetaKeggPipelineDef,
@@ -231,6 +257,32 @@ def get_api_router(app: FastAPI) -> APIRouter:
         return MetaKeggPipelineStateManager(
             redis_client=redis
         ).attach_pipeline_run_input_file(pipeline_ticket_id, file)
+
+    analysis_method_names_type_hint = Literal[
+        tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])
+    ]
+
+    ##ENDPOINT: /pipeline/{pipeline_ticket_id}/upload
+    @mekewe_router.delete(
+        "/pipeline/{pipeline_ticket_id}/remove/{file_name}",
+        response_model=MetaKeggPipelineDef,
+        description="Remove a file from an non started/queued pipeline-run definition",
+        tags=["Pipeline"],
+    )
+    @limiter.limit(f"5/minute")
+    async def remove_file_from_meta_kegg_pipeline_run_definition(
+        request: Request,
+        file_name: str,
+        pipeline_ticket_id: uuid.UUID,
+    ) -> MetaKeggPipelineDef:
+
+        return MetaKeggPipelineStateManager(
+            redis_client=redis
+        ).remove_pipeline_run_input_file(
+            pipeline_ticket_id,
+            file_name,
+            raise_exception_if_not_exists=pipelinerun_not_found_exception,
+        )
 
     analysis_method_names_type_hint = Literal[
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])
@@ -424,9 +476,7 @@ def get_info_config_router(app: FastAPI) -> APIRouter:
         request: Request,
     ) -> List[MetaKeggClientLink]:
         res = []
-        print("config.CLIENT_LINK_LIST", config.CLIENT_LINK_LIST)
         for link in config.CLIENT_LINK_LIST:
-            print("link", link)
             res.append(MetaKeggClientLink(**link))
         return res
 

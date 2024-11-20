@@ -407,6 +407,17 @@ class MetaKeggPipelineDef(BaseModel):
     def get_files_base_dir(self) -> Path:
         return Path(PurePath(config.PIPELINE_RUNS_CACHE_DIR, self.ticket.id.hex))
 
+    def get_input_files_path(self, filename: str = None) -> Optional[Path]:
+        basepath = self.get_input_file_dir()
+        return next(
+            (
+                Path(PurePath(basepath, file))
+                for file in self.pipeline_input_file_names
+                if file == filename
+            ),
+            None,
+        )
+
     def get_input_files_pathes(self) -> List[Path]:
         basepath = self.get_input_file_dir()
         return [

@@ -88,7 +88,7 @@ class MetaKeggPipelineStateManager:
         if upload_file_object.filename is None:
             upload_file_object.filename = uuid.uuid4().hex
         # clean filename
-        keepcharacters = (" ", ".", "_", "-")
+        keepcharacters = (".", "_", "-")
         clean_file_name = "".join(
             c for c in upload_file_object.filename if c.isalnum() or c in keepcharacters
         ).rstrip()
@@ -114,6 +114,28 @@ class MetaKeggPipelineStateManager:
         pipeline_status.pipeline_input_file_names.append(clean_file_name)
         self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
+
+    def remove_pipeline_run_input_file(
+        self,
+        ticket_id: uuid.UUID,
+        removefile_name: str,
+        raise_exception_if_not_exists: Exception = None,
+    ) -> MetaKeggPipelineDef:
+        pipeline = self.get_pipeline_run_definition(
+            ticket_id=ticket_id,
+            raise_exception_if_not_exists=raise_exception_if_not_exists,
+        )
+        upload_file_path = pipeline.get_input_files_path(removefile_name)
+        if upload_file_path is None:
+            # file does not exists. nothing we cant delete it
+            log.warning(
+                f"Tried to delete file '{removefile_name}' for pipeline '{pipeline.ticket.id}' but did not exists."
+            )
+            return pipeline
+        pipeline.pipeline_input_file_names.remove(removefile_name)
+        self.set_pipeline_run_definition(pipeline)
+        upload_file_path.unlink(missing_ok=True)
+        return self.get_pipeline_run_definition(ticket_id=ticket_id)
 
     def set_pipeline_run_as_queud(
         self, ticket_id: uuid.UUID, analysis_method_name: str
@@ -170,8 +192,10 @@ class MetaKeggPipelineStateManager:
         self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 
-    def clean_pipeline_run(self, ticket_id: uuid.UUID) -> MetaKeggPipelineDef:
+    def wipe_pipeline_run(self, ticket_id: uuid.UUID) -> Optional[MetaKeggPipelineDef]:
         pipeline_status = self.get_pipeline_run_definition(ticket_id)
+        if pipeline_status is None:
+            return
         shutil.rmtree(pipeline_status.get_files_base_dir())
         pipeline_status.state = "expired"
         self.set_pipeline_run_definition(pipeline_status)
