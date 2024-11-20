@@ -3,7 +3,7 @@
         <h1 class="text-3xl">Step 3: (Optional) Pipeline Parameters</h1>
     </div>
     <div style="text-align: left">
-        <UAccordion v-if="pipelineStore.globalParams.length > 0 || pipelineStore.methodSpecificParams.length > 0"
+        <UAccordion v-if="pipelineStore?.globalParams?.length > 0 || pipelineStore?.methodSpecificParams?.length > 0"
             :items="accordionItems">
             <template #item="{ item }">
                 <div

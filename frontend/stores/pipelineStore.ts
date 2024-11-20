@@ -1,18 +1,19 @@
 import { defineStore } from 'pinia'
+import type { PipelineStatus, PipelineParams, GlobalParams, MethodSpecificParams, FormState } from '~/types'
 
-export const usePipelineStore = defineStore('StudyStore', {
+export const usePipelineStore = defineStore('PipelineStore', {
     state: () => {
         return {
             errorMessage: "",
             errorStack: "",
-            formState: {},
-            parameters: "",
-            globalParams: [],
+            formState: {} as FormState,
+            parameters: null as PipelineParams | null,
+            globalParams: null as GlobalParams | null,
             isLoading: false,
             maxPlace: null,
-            methodSpecificParams: [],
+            methodSpecificParams: null as MethodSpecificParams | null,
             pipeLineProgress: 0,
-            pipelineStatus: "",
+            pipelineStatus: null as PipelineStatus | null,
             pipelineStart: false,
             selectedMethod: "single_input_genes",
             ticket_id: "",

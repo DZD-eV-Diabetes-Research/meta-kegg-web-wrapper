@@ -13,7 +13,7 @@
                 <br>
                 <h3 class="text-4xl">Maybe it has already expired</h3>
                 <br>
-                <h3 class="text-4xl">The current expiration time is: {{ config.pipeline_ticket_expire_time_sec / 3600 }}
+                <h3 class="text-4xl">The current expiration time is: {{ config?.pipeline_ticket_expire_time_sec ?? 86400 / 3600 }}
                     hours</h3>
                 <br>
                 <UButton label="Create New Ticket ID" variant="outline" color="red" @click="newID" />
@@ -36,33 +36,26 @@
 </template>
 
 <script setup lang="ts">
+import type { HealthStatus, PipelineParams, PipelineStatus, Config } from '~/types';
 
 const pipelineStore = usePipelineStore()
+const runtimeConfig = useRuntimeConfig();
+
 const route = useRoute()
 pipelineStore.ticket_id  = route.params.id as string
 
-
-const runtimeConfig = useRuntimeConfig();
-
-interface HealthStatus {
-    healthy: boolean,
-    dependencies: []
-}
-
-const selectedMethod = ref("single_input_genes")
-
-const { data: pipelineStatus, error: statusError } = await useFetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/status`)
-pipelineStore.pipelineStatus = pipelineStatus
+const { data: pipelineStatus, error: statusError } = await useFetch<PipelineStatus>(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/status`)
+pipelineStore.pipelineStatus = pipelineStatus.value
 
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
-const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
-const { data: parameters } = await useFetch(`${runtimeConfig.public.baseURL}/api/${selectedMethod.value}/params`)
-pipelineStore.parameters = parameters
+const { data: config } = await useFetch<Config>(`${runtimeConfig.public.baseURL}/config`)
+
+const { data: parameters } = await useFetch<PipelineParams>(`${runtimeConfig.public.baseURL}/api/${pipelineStore.selectedMethod}/params`)
+pipelineStore.parameters = parameters.value
 
 function newID() {
     navigateTo("/")
 }
-
 </script>
 
 <style>

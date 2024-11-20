@@ -34,7 +34,7 @@ const copyToClipboard = async () => {
         const startTime = performance.now();
         const duration = 2500;
 
-        const animate = (currentTime) => {
+        const animate = (currentTime: number) => {
             const elapsedTime = currentTime - startTime;
             const progress = Math.max(0, 100 - (elapsedTime / duration) * 100);
 

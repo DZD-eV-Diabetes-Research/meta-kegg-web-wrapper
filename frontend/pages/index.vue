@@ -55,7 +55,6 @@ const { data: ticket_id } = await useFetch<Ticket_ID>(`${runtimeConfig.public.ba
 })
 
 if (ticket_id.value && healthStatus.value?.healthy) {
-    console.log(ticket_id.value.id)
     await navigateTo(`/${ticket_id.value.id}`)
 }
 

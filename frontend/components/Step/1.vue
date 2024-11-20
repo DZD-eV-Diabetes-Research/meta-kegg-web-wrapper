@@ -19,32 +19,36 @@
         <UModal v-model="showAGBModal">
             <div class="p-4">
                 <div style="text-align: center;">
-                    {{ config.terms_and_conditions }}
+                    {{ config?.terms_and_conditions }}
                 </div>
             </div>
         </UModal>
     </div>
-    <div v-if="pipelineStore.pipelineStatus?.pipeline_input_file_names?.length > 0">
+    <div v-if="hasInputFiles">
         <p> Uploaded Files </p>
         <p v-for="item in pipelineStore.pipelineStatus?.pipeline_input_file_names" key="item">{{ item }}</p>
     </div>
 </template>
 
 <script setup lang="ts">
+import type { Config, PipelineStatus } from '~/types';
 
 const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
 const acceptAGB = ref(false)
 const showAGBModal = ref(false)
-const { data: config } = await useFetch(`${runtimeConfig.public.baseURL}/config`)
+const { data: config } = await useFetch<Config>(`${runtimeConfig.public.baseURL}/config`)
 
+const hasInputFiles = computed(() =>
+    (pipelineStore.pipelineStatus?.pipeline_input_file_names?.length ?? 0) > 0
+)
 
 watch(() => pipelineStore.pipelineStatus?.pipeline_input_file_names, (newValue) => {
-    acceptAGB.value = newValue?.length > 0
+    acceptAGB.value = (newValue?.length ?? 0) > 0
 }, { immediate: true })
 
 const inputLabel = computed(() => {
-    if (pipelineStore.pipelineStatus?.pipeline_input_file_names?.length > 0) {
+    if ((pipelineStore.pipelineStatus?.pipeline_input_file_names?.length ?? 0) > 0) {
         return "Add an additional File"
     } else {
         return "Select your File"
@@ -68,7 +72,7 @@ async function printUploadChange(event: Event) {
             body: formData,
         })
     }
-    const status = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
+    const status = await $fetch<PipelineStatus>(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
     pipelineStore.pipelineStatus = status
 }
 

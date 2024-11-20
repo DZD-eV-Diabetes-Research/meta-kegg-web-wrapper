@@ -1,5 +1,5 @@
 export function useClipboard() {
-    const copy = async (text) => {
+    const copy = async (text:string) => {
         try {
             await navigator.clipboard.writeText(text);
             return true;
