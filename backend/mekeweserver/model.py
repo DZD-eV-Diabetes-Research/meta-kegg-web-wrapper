@@ -60,55 +60,55 @@ class MetaKeggPipelineAnalysisMethod(BaseModel):
 class MetaKeggPipelineAnalysisMethodDocs(Enum):
     single_input_genes = MetaKeggPipelineAnalysisMethod(
         name="single_input_genes",
-        display_name="Single Input Genes Analysis",
+        display_name="Gene expression",
         internal_id=1,
         desc="Perform the Single Input Analysis for Gene IDs.",
     )
     single_input_transcripts = MetaKeggPipelineAnalysisMethod(
         name="single_input_transcripts",
-        display_name="Single Input Transcripts Analysis",
+        display_name="Transcript expression",
         internal_id=2,
         desc="Perform the Single Input Analysis for Transcript IDs.",
     )
     single_input_genes_bulk_mapping = MetaKeggPipelineAnalysisMethod(
         name="single_input_genes_bulk_mapping",
-        display_name="Single input genes bulk mapping Analysis",
+        display_name="Bulk RNAseq mapping",
         internal_id=3,
         desc="Perform a single input analysis with bulk mapping for genes.",
     )
     multiple_inputs = MetaKeggPipelineAnalysisMethod(
         name="multiple_inputs",
-        display_name="multiple inputs Analysis",
+        display_name="Multiple inputs",
         internal_id=4,
         desc="Perform the Multiple Inputs Analysis.",
     )
     single_input_with_methylation = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_methylation",
-        display_name="single input with methylation",
+        display_name="Methylated genes",
         internal_id=5,
         desc="Perform Single Input Analysis with Methylation.",
     )
     single_input_with_methylation_quantification = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_methylation_quantification",
-        display_name="single input with methylation quantification Analysis",
+        display_name="DMPs per gene",
         internal_id=6,
         desc="Perform Single Input Analysis with methylation quantification.",
     )
     single_input_with_miRNA = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_miRNA",
-        display_name="single input with miRNA Analysis",
+        display_name="miRNA target genes",
         internal_id=7,
         desc="Perform Single Input Analysis with miRNA.",
     )
     single_input_with_miRNA_quantification = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_miRNA_quantification",
-        display_name="single input with miRNA quantification Analysis",
+        display_name="DEmiRs per gene",
         internal_id=8,
         desc="Perform Single Input Analysis with miRNA.",
     )
     single_input_with_methylation_and_miRNA = MetaKeggPipelineAnalysisMethod(
         name="single_input_with_methylation_and_miRNA",
-        display_name="single input with methylation and miRNA Analysis",
+        display_name="Methylated + miRNA target genes",
         internal_id=9,
         desc="Perform Single Input Analysis with miRNA.",
     )
@@ -406,6 +406,17 @@ class MetaKeggPipelineDef(BaseModel):
 
     def get_files_base_dir(self) -> Path:
         return Path(PurePath(config.PIPELINE_RUNS_CACHE_DIR, self.ticket.id.hex))
+
+    def get_input_files_path(self, filename: str = None) -> Optional[Path]:
+        basepath = self.get_input_file_dir()
+        return next(
+            (
+                Path(PurePath(basepath, file))
+                for file in self.pipeline_input_file_names
+                if file == filename
+            ),
+            None,
+        )
 
     def get_input_files_pathes(self) -> List[Path]:
         basepath = self.get_input_file_dir()

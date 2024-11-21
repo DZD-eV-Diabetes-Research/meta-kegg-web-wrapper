@@ -59,7 +59,10 @@ def run_server(env: Dict = None):
     import getversion
     import mekeweserver
 
-    mekewe_server_version = getversion.get_module_version(mekeweserver)[0]
+    try:
+        mekewe_server_version = getversion.get_module_version(mekeweserver)[0]
+    except:
+        mekewe_server_version = "unknown"
     from mekeweserver.log import (
         get_loglevel,
         get_uvicorn_loglevel,
