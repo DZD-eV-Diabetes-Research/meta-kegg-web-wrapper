@@ -14,7 +14,7 @@ from mekeweserver.model import (
     MetaKeggPipelineInputParamsDocs,
     MetaKeggPipelineAnalysisMethodDocs,
     MetaKeggPipelineInputParamsValues,
-    MetaKeggPipelineInputParamsValuesUpdate,
+    MetaKeggPipelineInputParamsValuesAllOptional,
 )
 from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
@@ -39,7 +39,6 @@ class MetaKeggPipelineStateManager:
             self.REDIS_NAME_PIPELINE_STATES
         ).values()
         for raw_definition in raw_definitions:
-            print("raw_definition", raw_definition)
             definition = MetaKeggPipelineDef.model_validate_json(raw_definition)
             if filter_state is not None and definition.state == filter_state:
                 result.append(definition)
@@ -48,7 +47,7 @@ class MetaKeggPipelineStateManager:
         return result
 
     def init_new_pipeline_run(
-        self, params: MetaKeggPipelineInputParamsValuesUpdate
+        self, params: MetaKeggPipelineInputParamsValuesAllOptional
     ) -> MetaKeggPipelineTicket:
         ticket = MetaKeggPipelineTicket()
         pipeline_status = MetaKeggPipelineDef(
@@ -56,7 +55,7 @@ class MetaKeggPipelineStateManager:
             place_in_queue=None,
             ticket=ticket,
             pipeline_input_file_names=None,
-            pipeline_params=MetaKeggPipelineInputParamsValues(
+            pipeline_params=MetaKeggPipelineInputParamsValuesAllOptional(
                 **params.model_dump(exclude_unset=True)
             ),
         )

@@ -89,7 +89,7 @@ def test_single_input_gene_pipeline_run():
     res = req(
         f"/api/pipeline/{pipeline_ticket_id}",
         method="patch",
-        q={"count_threshold": 2},
+        b={"global_params": {}, "method_specific_params": {"count_threshold": 2}},
     )
     dict_must_contain(
         res,
@@ -97,7 +97,7 @@ def test_single_input_gene_pipeline_run():
         exception_dict_identifier="PATCH-'/api/pipeline/{pipeline_ticket_id}'-response",
     )
     dict_must_contain(
-        res["pipeline_params"],
+        res["pipeline_params"]["method_specific_params"],
         required_keys_and_val={"count_threshold": 2},
         exception_dict_identifier="PATCH-'/api/pipeline/{pipeline_ticket_id}'-response",
     )

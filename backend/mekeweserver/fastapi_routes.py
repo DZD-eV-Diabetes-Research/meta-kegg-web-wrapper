@@ -51,7 +51,7 @@ from mekeweserver.model import (
     MetaKeggPipelineInputParamsDesc,
     MetaKeggPipelineAnalysisMethods,
     MetaKeggPipelineInputParamsValues,
-    MetaKeggPipelineInputParamsValuesUpdate,
+    MetaKeggPipelineInputParamsValuesAllOptional,
     get_param_docs,
     get_param_model,
     GlobalParamModel,
@@ -157,12 +157,12 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def initialize_a_metakegg_pipeline_run_definition(
         request: Request,
         pipeline_params: Annotated[
-            Optional[MetaKeggPipelineInputParamsValuesUpdate], Body()
+            Optional[MetaKeggPipelineInputParamsValuesAllOptional], Body()
         ] = None,
         # pipeline_params: Annotated[MetaKeggPipelineInputParamsDocs, Query()] = None,
     ) -> MetaKeggPipelineTicket:
         if pipeline_params is None:
-            pipeline_params = MetaKeggPipelineInputParamsValuesUpdate(
+            pipeline_params = MetaKeggPipelineInputParamsValuesAllOptional(
                 global_params={}, method_specific_params={}
             )
         ticket: MetaKeggPipelineTicket = MetaKeggPipelineStateManager(
@@ -210,7 +210,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def update_metakegg_pipeline_non_file_parameters(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
-        pipeline_params: Annotated[MetaKeggPipelineInputParamsValuesUpdate, Body()],
+        pipeline_params: Annotated[
+            MetaKeggPipelineInputParamsValuesAllOptional, Body()
+        ],
     ) -> MetaKeggPipelineDef:
 
         # get current params from db

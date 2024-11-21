@@ -381,7 +381,7 @@ class MetaKeggPipelineInputParamsValues(BaseModel):
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
 
-class MetaKeggPipelineInputParamsValuesUpdate(BaseModel):
+class MetaKeggPipelineInputParamsValuesAllOptional(BaseModel):
     global_params: GlobalParamModelOptional = Field()
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
@@ -420,7 +420,7 @@ class MetaKeggPipelineDef(BaseModel):
         description="If the state of a pipeline run is `success`, the result can be downloaded from this path.",
         examples=[None],
     )
-    pipeline_params: MetaKeggPipelineInputParamsValues
+    pipeline_params: MetaKeggPipelineInputParamsValuesAllOptional
     pipeline_analyses_method: MetaKeggPipelineAnalysisMethod | None = None
     pipeline_input_file_names: Optional[Dict[str, List[str]]] = Field(
         description="Uploaded file per parameter", default_factory=dict
