@@ -1,11 +1,11 @@
-export function useCopyToClipboard() {
+export function useCustomCopyToClipboard() {
     const icon = ref("i-heroicons-clipboard-document");
     const copyMessage = ref("");
     const copyProgress = ref(0);
     const showCopyMessage = ref(false);
 
-    const copyToClipboard = async (textToCopy) => {
-        const copy = async (text) => {
+    const copyToClipboard = async (textToCopy: string) => {
+        const copy = async (text: string) => {
             try {
                 await navigator.clipboard.writeText(text);
                 return true;
@@ -25,7 +25,7 @@ export function useCopyToClipboard() {
             const startTime = performance.now();
             const duration = 2500;
 
-            const animate = (currentTime) => {
+            const animate = (currentTime: number) => {
                 const elapsedTime = currentTime - startTime;
                 const progress = Math.max(0, 100 - (elapsedTime / duration) * 100);
 

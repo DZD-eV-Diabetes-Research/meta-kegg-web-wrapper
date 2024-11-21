@@ -1,6 +1,20 @@
 <template>
     <div class="step-box">
-        <h1 class="text-3xl">Step 1: Upload your files</h1>
+        <div style="display: flex;">
+            <h1 class="text-3xl">Step 1: Upload your files</h1>
+            <UPopover mode="hover" :popper="{ placement: 'right' }">
+                <UIcon name="i-heroicons-question-mark-circle" class="w-6 h-6" />
+                <template #panel>
+                    <div class="p-4" style="text-align: left;">
+                        <p>After uploading the file(s) you can</p>
+                        <p>delete them manually. </p>
+                        <p>Otherwise the files will be deleted</p>
+                        <p>automatically after {{ (configStore.config?.pipeline_ticket_expire_time_sec ?? 86400) /
+                            3600 }} hours.</p>
+                    </div>
+                </template>
+            </UPopover>
+        </div>
     </div>
     <div v-if="acceptAGB" style="margin-top: 1%; margin-bottom: 0.5%">
         <UICustomInputField @change="printUploadChange" :label="inputLabel" />
@@ -13,33 +27,48 @@
         </UButton>
     </div>
     <div style="display: flex; justify-content: center; margin-bottom: 0.5%;">
-        <UCheckbox label="Accept the AGB" v-model="acceptAGB" required :disabled="acceptAGB" />
+        <UCheckbox v-model="acceptAGB" :disabled="acceptAGB" />
+        <label for="acceptAGB" style="padding-left: 0.5%; padding-right: 0.25%">Accept the </label>
+        <UButton variant="link" size="xl" :padded="false" @click="showAGBModal = true">AGB</UButton>
+        <UModal v-model="showAGBModal">
+            <div class="p-4">
+                <div style="text-align: center;">
+                    {{ configStore.config?.terms_and_conditions }}
+                </div>
+            </div>
+        </UModal>
     </div>
-    <div v-if="pipelineStatus?.pipeline_input_file_names?.length > 0">
-        <p> Uploaded Files </p>
-        <p v-for="item in pipelineStatus?.pipeline_input_file_names" key="item">{{ item }}</p>
+    <div v-if="hasInputFiles">
+        <p class="text-lg" style="margin-top: 1%;" >Uploaded Files</p>
+        <div v-for="(item, index) in pipelineStore.pipelineStatus?.pipeline_input_file_names" :key="item"
+            style="display: flex; align-items: center; justify-content: center;">
+            <p class="text-base">{{index + 1}}. {{ item }}</p>
+            <UButton variant="link" color="red" :padded="true" @click="deleteFile(item)">
+                <UIcon name="i-heroicons-trash" class="w-5 h-5" style="padding-bottom: 1%;"/>
+            </UButton>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
+import type { PipelineStatus } from '~/types';
 
-const route = useRoute()
-const ticket_id = route.params.id
-
+const configStore = useConfigStore()
+const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
-
-const { data: pipelineStatus, error: statusError } = await useFetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
-
 const acceptAGB = ref(false)
+const showAGBModal = ref(false)
 
+const hasInputFiles = computed(() =>
+    (pipelineStore.pipelineStatus?.pipeline_input_file_names?.length ?? 0) > 0
+)
 
-
-watch(() => pipelineStatus.value?.pipeline_input_file_names, (newValue) => {
-    acceptAGB.value = newValue?.length > 0
+watch(() => pipelineStore.pipelineStatus?.pipeline_input_file_names, (newValue) => {
+    acceptAGB.value = (newValue?.length ?? 0) > 0
 }, { immediate: true })
 
 const inputLabel = computed(() => {
-    if (pipelineStatus.value?.pipeline_input_file_names?.length > 0) {
+    if ((pipelineStore.pipelineStatus?.pipeline_input_file_names?.length ?? 0) > 0) {
         return "Add an additional File"
     } else {
         return "Select your File"
@@ -50,24 +79,28 @@ function uncheckedAGB() {
     alert("To upload files you must accept the AGBs")
 }
 
-const formDataCheck = ref(false)
-
-
 async function printUploadChange(event: Event) {
     const input = event.target as HTMLInputElement
 
     if (input.files && input.files.length > 0) {
         const formData = new FormData()
         formData.append('file', input.files[0])
-        formDataCheck.value = true
+        pipelineStore.uploadCheck = true
 
-        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/upload`, {
+        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/upload`, {
             method: 'POST',
             body: formData,
         })
     }
-    const status = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${ticket_id}/status`)
-    pipelineStatus.value = status
+    const status = await $fetch<PipelineStatus>(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
+    pipelineStore.pipelineStatus = status
+}
+
+async function deleteFile(filenName:string) {
+    await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/remove/${filenName}`, {
+            method: 'DELETE',
+        })
+    pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
 }
 
 </script>
