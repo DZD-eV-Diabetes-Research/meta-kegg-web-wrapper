@@ -9,11 +9,13 @@
         </div>
         <UIBaseCard v-if="statusError" :narrow-width="true">
             <div class="statusError">
+                <h3 class="text-4xl">Error 404</h3>
+                <br>
                 <h3 class="text-4xl">Your MetaKegg url could not be found</h3>
                 <br>
                 <h3 class="text-4xl">Maybe it has already expired</h3>
                 <br>
-                <h3 class="text-4xl">The current expiration time is: {{ config?.pipeline_ticket_expire_time_sec ?? 86400 / 3600 }}
+                <h3 class="text-4xl">The current expiration time is: {{ (config?.pipeline_ticket_expire_time_sec ?? 86400 )/ 3600 }}
                     hours</h3>
                 <br>
                 <UButton label="Create New Ticket ID" variant="outline" color="red" @click="newID" />
@@ -36,9 +38,10 @@
 </template>
 
 <script setup lang="ts">
-import type { HealthStatus, PipelineParams, PipelineStatus, Config } from '~/types';
+import type { HealthStatus, PipelineParams, PipelineStatus, Config, InfoLinks } from '~/types';
 
 const pipelineStore = usePipelineStore()
+const configStore = useConfigStore()
 const runtimeConfig = useRuntimeConfig();
 
 const route = useRoute()
@@ -48,7 +51,12 @@ const { data: pipelineStatus, error: statusError } = await useFetch<PipelineStat
 pipelineStore.pipelineStatus = pipelineStatus.value
 
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
+
 const { data: config } = await useFetch<Config>(`${runtimeConfig.public.baseURL}/config`)
+configStore.config = config.value
+
+const { data: infoLinks } = await useFetch<InfoLinks[]>(`${runtimeConfig.public.baseURL}/info-links`)
+configStore.infoLinks = infoLinks.value
 
 const { data: parameters } = await useFetch<PipelineParams>(`${runtimeConfig.public.baseURL}/api/${pipelineStore.selectedMethod}/params`)
 pipelineStore.parameters = parameters.value

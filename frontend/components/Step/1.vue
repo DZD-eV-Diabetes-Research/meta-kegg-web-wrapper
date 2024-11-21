@@ -1,6 +1,20 @@
 <template>
     <div class="step-box">
-        <h1 class="text-3xl">Step 1: Upload your files</h1>
+        <div style="display: flex;">
+            <h1 class="text-3xl">Step 1: Upload your files</h1>
+            <UPopover mode="hover" :popper="{ placement: 'right' }">
+                <UIcon name="i-heroicons-question-mark-circle" class="w-6 h-6" />
+                <template #panel>
+                    <div class="p-4" style="text-align: left;">
+                        <p>After uploading the file(s) you can</p>
+                        <p>delete them manually. </p>
+                        <p>Otherwise the files will be deleted</p> 
+                        <p>automatically after {{ (configStore.config?.pipeline_ticket_expire_time_sec ?? 86400) /
+                            3600}} hours.</p>
+                    </div>
+                </template>
+            </UPopover>
+        </div>
     </div>
     <div v-if="acceptAGB" style="margin-top: 1%; margin-bottom: 0.5%">
         <UICustomInputField @change="printUploadChange" :label="inputLabel" />
@@ -19,7 +33,7 @@
         <UModal v-model="showAGBModal">
             <div class="p-4">
                 <div style="text-align: center;">
-                    {{ config?.terms_and_conditions }}
+                    {{ configStore.config?.terms_and_conditions }}
                 </div>
             </div>
         </UModal>
@@ -31,13 +45,13 @@
 </template>
 
 <script setup lang="ts">
-import type { Config, PipelineStatus } from '~/types';
+import type { PipelineStatus } from '~/types';
 
+const configStore = useConfigStore()
 const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
 const acceptAGB = ref(false)
 const showAGBModal = ref(false)
-const { data: config } = await useFetch<Config>(`${runtimeConfig.public.baseURL}/config`)
 
 const hasInputFiles = computed(() =>
     (pipelineStore.pipelineStatus?.pipeline_input_file_names?.length ?? 0) > 0

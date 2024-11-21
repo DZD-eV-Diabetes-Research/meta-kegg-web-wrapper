@@ -3,4 +3,5 @@ export interface Config {
     bug_report_email:                string;
     terms_and_conditions:            string;
     pipeline_ticket_expire_time_sec: number;
+    entry_text:                      string;
 }

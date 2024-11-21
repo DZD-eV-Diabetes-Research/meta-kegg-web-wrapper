@@ -43,7 +43,7 @@
                         style="display: flex; justify-content: center; align-items: center; height: 100%; width: 100%;">
                         <div style="border: solid 1px;" class="email-support-container">
                             <a class="text-3xl" style="padding: 15px;"
-                                :href="`mailto:${config?.bug_report_email}?subject=Error Metakegg: ${encodeURIComponent(pipelineStore.errorMessage)} &body=During the run of the following URL: %0D%0A %0D%0A ${url.toString()}   %0D%0A %0D%0A The page returned the following %0D%0A%0D%0A Errorstack:  %0D%0A%0D%0A  ${encodeURIComponent(pipelineStore?.pipelineStatus?.error_traceback)}`">
+                                :href="`mailto:${configStore.config?.bug_report_email}?subject=Error Metakegg: ${encodeURIComponent(pipelineStore.errorMessage)} &body=During the run of the following URL: %0D%0A %0D%0A ${url.toString()}   %0D%0A %0D%0A The page returned the following %0D%0A%0D%0A Errorstack:  %0D%0A%0D%0A  ${encodeURIComponent(pipelineStore.pipelineStatus?.error_traceback)}`">
                                 Send a mail to our support
                                 <UIcon name="i-heroicons-paper-airplane" class="w-5 h-5" />
                             </a>
@@ -56,12 +56,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Config } from '~/types';
+const configStore = useConfigStore()
 
 const url = useRequestURL()
 const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
-const { data: config } = await useFetch<Config>(`${runtimeConfig.public.baseURL}/config`)
 
 async function downloadFile() {
     try {
