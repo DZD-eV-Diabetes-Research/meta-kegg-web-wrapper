@@ -196,7 +196,8 @@ class MetaKeggPipelineStateManager:
         pipeline_status = self.get_pipeline_run_definition(ticket_id)
         if pipeline_status is None:
             return
-        shutil.rmtree(pipeline_status.get_files_base_dir())
+        if pipeline_status.get_files_base_dir().exists():
+            shutil.rmtree(pipeline_status.get_files_base_dir())
         pipeline_status.state = "expired"
         self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
