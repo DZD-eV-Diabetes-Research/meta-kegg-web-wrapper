@@ -209,3 +209,41 @@ def list_contains_dict_that_must_contain(
     ):
         return True
     return False
+
+
+import os
+import subprocess
+
+# Define the target script path to match
+TARGET_PATH = "meta-kegg-web-wrapper/backend/tests/main.py"
+
+
+def kill_orphean_test_runs():
+    # Define the target script path to match
+    TARGET_PATH = "backend/tests/main.py"
+
+    try:
+        # Get the current script's PID to avoid killing itself
+        current_pid = os.getpid()
+
+        # Get the list of all processes
+        result = subprocess.run(["ps", "aux"], stdout=subprocess.PIPE, text=True)
+        processes = result.stdout.splitlines()
+
+        for process in processes:
+            # Check if the process is a Python process and matches the target path
+            if "python" in process and TARGET_PATH in process:
+                # Extract the PID (second column in the `ps aux` output)
+                pid = int(process.split()[1])
+
+                # Skip the current process
+                if pid == current_pid:
+                    continue
+
+                print(f"Killing process {pid} running {TARGET_PATH}")
+
+                # Kill the process
+                os.kill(pid, 9)  # SIGKILL
+        print("All matching Python processes have been terminated, except this one.")
+    except Exception as e:
+        print(f"An error occurred: {e}")

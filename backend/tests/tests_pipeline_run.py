@@ -114,7 +114,9 @@ def test_single_input_gene_pipeline_run():
     dict_must_contain(
         res,
         required_keys_and_val={
-            "pipeline_input_file_names": ["single_input_genes.xlsx"]
+            "pipeline_input_file_names": {
+                "input_file_path": ["single_input_genes.xlsx"]
+            }
         },
         exception_dict_identifier="POST-'/api/pipeline/{pipeline_ticket_id}/upload'-response",
     )

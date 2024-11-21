@@ -263,7 +263,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     ) -> MetaKeggPipelineDef:
         return MetaKeggPipelineStateManager(
             redis_client=redis
-        ).attach_pipeline_run_input_file(pipeline_ticket_id, file)
+        ).attach_pipeline_run_input_file(pipeline_ticket_id, param_name, file)
 
     analysis_method_names_type_hint = Literal[
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])

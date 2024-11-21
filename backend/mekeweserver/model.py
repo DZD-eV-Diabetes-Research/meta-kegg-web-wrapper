@@ -23,8 +23,10 @@ from mekeweserver.config import Config, get_config
 import datetime
 from pathlib import Path, PurePath
 from metaKEGG import PipelineAsync
+from mekeweserver.log import get_logger
 
 config: Config = get_config()
+log = get_logger()
 
 
 class MetaKeggPipelineAnalysisMethods(Enum):
@@ -217,6 +219,10 @@ class MetaKeggPipelineInputParamsDocsTypeOverride(Enum):
     input_label = List[str]
 
 
+class MetaKeggPipelineInputParamsDefaultValOverrideFactory(Enum):
+    input_label = partial(list)
+
+
 param_types_map = {"int": int, "bool": bool, "float": float, "str": str, "file": Path}
 
 
@@ -243,12 +249,20 @@ def get_param_model(
             type_annotation = List[type_annotation]
         if not par_doc.required or make_all_params_optional:
             type_annotation = Optional[type_annotation]
-        if make_all_params_optional:
-            default = None if par_doc.default == UNSET else par_doc.default
-            params[par_doc.name] = (
-                type_annotation,
-                Field(default=default, description=par_doc.description),
+        if par_doc.name in [
+            f.name for f in MetaKeggPipelineInputParamsDefaultValOverrideFactory
+        ]:
+            default_factory = MetaKeggPipelineInputParamsDefaultValOverrideFactory[
+                par_doc.name
+            ].value.func
+            field = Field(
+                default_factory=default_factory, description=par_doc.description
             )
+            params[par_doc.name] = (type_annotation, field)
+        elif make_all_params_optional:
+            default = None if par_doc.default == UNSET else par_doc.default
+            field = Field(default=default, description=par_doc.description)
+            params[par_doc.name] = (type_annotation, field)
         elif par_doc.default == UNSET:
             params[par_doc.name] = (
                 type_annotation,
@@ -338,8 +352,10 @@ def _get_param_doc(
 
 
 def get_param_docs(
-    analyses_method: Awaitable | Callable,
+    analyses_method: Awaitable | Callable | partial,
 ) -> List[MetaKeggPipelineInputParamDocItem]:
+    if isinstance(analyses_method, partial):
+        analyses_method = analyses_method.func
     params: List[MetaKeggPipelineInputParamDocItem] = []
     for name, type_hint in get_type_hints(analyses_method).items():
         if name in metaKegg_param_exclude:
@@ -358,6 +374,12 @@ def get_param_docs(
 def find_parameter_docs_by_name(
     param_name: str,
 ) -> MetaKeggPipelineInputParamDocItem | None:
+    # search in global params
+    param_docs = get_param_docs(PipelineAsync.__init__)
+    for param_doc in param_docs:
+        if param_doc.name == param_name:
+            return param_doc
+    # search in analyses methods
     for analyses_method in MetaKeggPipelineAnalysisMethods:
         param_docs = get_param_docs(analyses_method.value)
         for param_doc in param_docs:
@@ -436,17 +458,22 @@ class MetaKeggPipelineDef(BaseModel):
         return Path(PurePath(config.PIPELINE_RUNS_CACHE_DIR, self.ticket.id.hex))
 
     def get_input_files_path(
-        self, parameter: str, filename: str = None
+        self, parameter: str, filename: str = None, not_exists_ok: bool = True
     ) -> Optional[Path]:
-        basepath = self.get_input_file_dir()
-        return next(
+        basepath = self.get_input_file_dir(parameter)
+        result = next(
             (
-                Path(PurePath(basepath, parameter, file))
-                for file in self.pipeline_input_file_names
+                Path(PurePath(basepath, file))
+                for file in self.pipeline_input_file_names[parameter]
                 if file == filename
             ),
             None,
         )
+        if result is None and not not_exists_ok:
+            raise ValueError(
+                f"Can not find any file for parameter '{parameter}' with name '{filename}' at basepath '{basepath.absolute()}'"
+            )
+        return result
 
     def get_input_files_pathes(
         self,

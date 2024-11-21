@@ -92,7 +92,7 @@ class MetaKeggPipelineStateManager:
         param_doc = find_parameter_docs_by_name(param_name=param_name)
         if param_doc == None or param_doc.type != "file":
             raise ValueError(
-                f"Can not find parameter with name {param_name} to attach uploaded file to. Please provide a valid parameter name from one of MetaKegg analyses methods."
+                f"Can not find parameter with name '{param_name}' to attach uploaded file to. Please provide a valid parameter name from one of MetaKegg analyses methods."
             )
 
         if upload_file_object.filename is None:
@@ -104,6 +104,8 @@ class MetaKeggPipelineStateManager:
         ).rstrip()
 
         pipeline_status = self.get_pipeline_run_definition(ticket_id)
+        if pipeline_status.pipeline_input_file_names is None:
+            pipeline_status.pipeline_input_file_names = {}
 
         # define storage path for file
         internal_file_path = Path(
@@ -126,7 +128,7 @@ class MetaKeggPipelineStateManager:
             target_file.write(upload_file_object.file.read())
 
         # define file as pipeline input file
-        if pipeline_status.pipeline_input_file_names[param_name] is None:
+        if param_name not in pipeline_status.pipeline_input_file_names:
             # ToDo: why is this nessesary? Why is default_factory not creating an empty list here?
             pipeline_status.pipeline_input_file_names[param_name] = []
 

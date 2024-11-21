@@ -21,7 +21,13 @@ from statics import (
 
 os.environ["MEKEWESERVER_DOT_ENV_FILE"] = DOT_ENV_FILE_PATH
 
-from utils import get_mekeweserver_base_url, get_dot_env_file_variable
+from utils import (
+    get_mekeweserver_base_url,
+    get_dot_env_file_variable,
+    kill_orphean_test_runs,
+)
+
+kill_orphean_test_runs()
 
 test_data_base_path = Path(
     get_dot_env_file_variable(
