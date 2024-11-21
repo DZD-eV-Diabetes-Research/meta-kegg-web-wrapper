@@ -24,10 +24,10 @@ os.environ["MEKEWESERVER_DOT_ENV_FILE"] = DOT_ENV_FILE_PATH
 from utils import (
     get_mekeweserver_base_url,
     get_dot_env_file_variable,
-    kill_orphean_test_runs,
+    kill_orphean_test_run_processes,
 )
 
-kill_orphean_test_runs()
+kill_orphean_test_run_processes()
 
 test_data_base_path = Path(
     get_dot_env_file_variable(
@@ -107,9 +107,11 @@ if mekeweserver_process.is_alive():
         print(print(traceback.format_exc()))
         shutdown_mekeweserver_and_backgroundworker()
         print("TESTS FAILED")
+        kill_orphean_test_run_processes()
         exit(1)
 
 
 shutdown_mekeweserver_and_backgroundworker()
 print("TESTS SUCCEDED")
+kill_orphean_test_run_processes()
 exit(0)

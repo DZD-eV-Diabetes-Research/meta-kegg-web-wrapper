@@ -214,11 +214,8 @@ def list_contains_dict_that_must_contain(
 import os
 import subprocess
 
-# Define the target script path to match
-TARGET_PATH = "meta-kegg-web-wrapper/backend/tests/main.py"
 
-
-def kill_orphean_test_runs():
+def kill_orphean_test_run_processes(kill_myself_too: bool = False):
     # Define the target script path to match
     TARGET_PATH = "backend/tests/main.py"
 
@@ -237,7 +234,7 @@ def kill_orphean_test_runs():
                 pid = int(process.split()[1])
 
                 # Skip the current process
-                if pid == current_pid:
+                if pid == current_pid and not kill_myself_too:
                     continue
 
                 print(f"Killing process {pid} running {TARGET_PATH}")
