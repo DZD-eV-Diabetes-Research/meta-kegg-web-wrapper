@@ -336,21 +336,31 @@ def _get_param_doc(
 
 
 def get_param_docs(
-    obj: Awaitable | Callable,
+    analyses_method: Awaitable | Callable,
 ) -> List[MetaKeggPipelineInputParamDocItem]:
     params: List[MetaKeggPipelineInputParamDocItem] = []
-    for name, type_hint in get_type_hints(obj).items():
+    for name, type_hint in get_type_hints(analyses_method).items():
         if name in metaKegg_param_exclude:
             continue
         if name == "return":
             continue
         default = UNSET
-        param = inspect.signature(obj).parameters.get(name)
+        param = inspect.signature(analyses_method).parameters.get(name)
         if param and param.default is not inspect.Parameter.empty:
             default = param.default
         doc = _get_param_doc(name, type_hint, default=default)
         params.append(doc)
     return params
+
+
+def find_parameter_docs_by_name(
+    param_name: str,
+) -> MetaKeggPipelineInputParamDocItem | None:
+    for analyses_method in MetaKeggPipelineAnalysisMethods:
+        param_docs = get_param_docs(analyses_method.value)
+        for param_doc in param_docs:
+            if param_doc.name == param_name:
+                return param_doc
 
 
 GlobalParamModel: Type[BaseModel] = get_param_model(

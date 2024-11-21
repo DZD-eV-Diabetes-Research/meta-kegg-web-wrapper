@@ -17,6 +17,7 @@ from mekeweserver.model import (
 )
 from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
+from mekeweserver.model import find_parameter_docs_by_name
 
 config: Config = get_config()
 log = get_logger()
@@ -86,6 +87,12 @@ class MetaKeggPipelineStateManager:
     def attach_pipeline_run_input_file(
         self, ticket_id: uuid.UUID, param_name: str, upload_file_object: UploadFile
     ) -> MetaKeggPipelineDef:
+        param_doc = find_parameter_docs_by_name(param_name=param_name)
+        if param_doc == None or param_doc.type != "file":
+            raise ValueError(
+                f"Can not find parameter with name {param_name} to attach uploaded file to. Please provide a valid parameter name from one of MetaKegg analyses methods."
+            )
+
         if upload_file_object.filename is None:
             upload_file_object.filename = uuid.uuid4().hex
         # clean filename
@@ -103,6 +110,15 @@ class MetaKeggPipelineStateManager:
         internal_file_dir = internal_file_path.parent
         internal_file_dir.mkdir(parents=True, exist_ok=True)
 
+        # delete old file if it "one file only" param and existent.
+        if not param_doc.is_list:
+            existing_file = pipeline_status.pipeline_input_file_names[param_name]
+            if existing_file:
+                pipeline_status = self.remove_pipeline_run_input_file(
+                    ticket_id=ticket_id,
+                    removefile_name=existing_file[0],
+                )
+
         # store file
         with open(internal_file_path, "wb") as target_file:
             target_file.write(upload_file_object.file.read())
@@ -119,6 +135,7 @@ class MetaKeggPipelineStateManager:
     def remove_pipeline_run_input_file(
         self,
         ticket_id: uuid.UUID,
+        param_name: str,
         removefile_name: str,
         raise_exception_if_not_exists: Exception = None,
     ) -> MetaKeggPipelineDef:
@@ -126,14 +143,14 @@ class MetaKeggPipelineStateManager:
             ticket_id=ticket_id,
             raise_exception_if_not_exists=raise_exception_if_not_exists,
         )
-        upload_file_path = pipeline.get_input_files_path(removefile_name)
+        upload_file_path = pipeline.get_input_files_path(param_name, removefile_name)
         if upload_file_path is None:
             # file does not exists. nothing we cant delete it
             log.warning(
-                f"Tried to delete file '{removefile_name}' for pipeline '{pipeline.ticket.id}' but did not exists."
+                f"Tried to delete file '{param_name}'/'{removefile_name}' for pipeline '{pipeline.ticket.id}' but did not exists."
             )
             return pipeline
-        pipeline.pipeline_input_file_names.remove(removefile_name)
+        pipeline.pipeline_input_file_names[param_name].remove(removefile_name)
         self.set_pipeline_run_definition(pipeline)
         upload_file_path.unlink(missing_ok=True)
         return self.get_pipeline_run_definition(ticket_id=ticket_id)
