@@ -55,7 +55,7 @@ from mekeweserver.model import (
     get_param_docs,
     get_param_model,
     GlobalParamModel,
-    GlobalParamModelUpdate,
+    GlobalParamModelOptional,
     MetaKeggPipelineDefStates,
 )
 
@@ -157,13 +157,13 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def initialize_a_metakegg_pipeline_run_definition(
         request: Request,
         pipeline_params: Annotated[
-            Optional[MetaKeggPipelineInputParamsValues], Body()
+            Optional[MetaKeggPipelineInputParamsValuesUpdate], Body()
         ] = None,
         # pipeline_params: Annotated[MetaKeggPipelineInputParamsDocs, Query()] = None,
     ) -> MetaKeggPipelineTicket:
         if pipeline_params is None:
-            pipeline_params = MetaKeggPipelineInputParamsValues(
-                global_params={"input_label": []}, method_specific_params={}
+            pipeline_params = MetaKeggPipelineInputParamsValuesUpdate(
+                global_params={}, method_specific_params={}
             )
         ticket: MetaKeggPipelineTicket = MetaKeggPipelineStateManager(
             redis_client=redis

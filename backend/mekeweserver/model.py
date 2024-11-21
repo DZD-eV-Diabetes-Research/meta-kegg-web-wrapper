@@ -224,7 +224,7 @@ def get_param_model(
     method_name: str,
     param_docs: List[MetaKeggPipelineInputParamDocItem],
     make_all_params_optional: bool = False,
-    exclude_file_params: bool = False,
+    file_params: Optional[bool] = None,
 ) -> Type[BaseModel]:
     params = {}
     """from pydantic create_model docs:
@@ -234,7 +234,9 @@ def get_param_model(
     """
 
     for par_doc in param_docs:
-        if exclude_file_params and par_doc.type == "file":
+        if file_params == False and par_doc.type == "file":
+            continue
+        if file_params == True and par_doc.type != "file":
             continue
         type_annotation = param_types_map[par_doc.type]
         if par_doc.is_list:
@@ -366,21 +368,21 @@ def find_parameter_docs_by_name(
 GlobalParamModel: Type[BaseModel] = get_param_model(
     "Global", get_param_docs(PipelineAsync.__init__)
 )
-GlobalParamModelUpdate: Type[BaseModel] = get_param_model(
+GlobalParamModelOptional: Type[BaseModel] = get_param_model(
     "Global",
     get_param_docs(PipelineAsync.__init__),
     make_all_params_optional=True,
-    exclude_file_params=True,
+    file_params=False,
 )
 
 
 class MetaKeggPipelineInputParamsValues(BaseModel):
-    global_params: GlobalParamModel = Field()
+    global_params: GlobalParamModelOptional = Field()
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
 
 class MetaKeggPipelineInputParamsValuesUpdate(BaseModel):
-    global_params: GlobalParamModelUpdate = Field()
+    global_params: GlobalParamModelOptional = Field()
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -420,7 +422,7 @@ class MetaKeggPipelineDef(BaseModel):
     )
     pipeline_params: MetaKeggPipelineInputParamsValues
     pipeline_analyses_method: MetaKeggPipelineAnalysisMethod | None = None
-    pipeline_input_file_names: Dict[str, List[str]] = Field(
+    pipeline_input_file_names: Optional[Dict[str, List[str]]] = Field(
         description="Uploaded file per parameter", default_factory=dict
     )
     pipeline_output_zip_file_name: Optional[str] = Field(default=None)

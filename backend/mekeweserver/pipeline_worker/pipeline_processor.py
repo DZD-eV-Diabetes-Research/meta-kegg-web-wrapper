@@ -54,10 +54,6 @@ class MetakeggPipelineProcessor:
                 self.pipeline_definition.pipeline_analyses_method
             )
 
-            # hotfix: metakegg wont eat a single item list as "single input" :/
-            if len(self.pipeline.input_file_path) == 1:
-                self.pipeline.input_file_path = self.pipeline.input_file_path[0]
-
             # get_logger().info(("method:", method, method, str(method)))
             analysis_method_func: Callable[[], Awaitable[str]] = getattr(
                 self.pipeline, method.name
@@ -72,24 +68,64 @@ class MetakeggPipelineProcessor:
                 )
             ):
                 # validate/filter method params
-                method_params_model: Type[BaseModel] = get_param_model(
-                    method.name,
-                    get_param_docs(analysis_method_func),
+                method_non_files_params_model: Type[BaseModel] = get_param_model(
+                    method_name=method.name,
+                    param_docs=get_param_docs(analysis_method_func),
+                    file_params=False,
                 )
+
                 # extract only valud params for this method
-                attr = {}
-                for attr_name, field_info in method_params_model.model_fields.items():
+                attrs_non_file = {}
+                for (
+                    attr_name,
+                    field_info,
+                ) in method_non_files_params_model.model_fields.items():
                     if (
                         attr_name
                         in self.pipeline_definition.pipeline_params.method_specific_params
                     ):
-                        attr[attr_name] = (
+                        attrs_non_file[attr_name] = (
                             self.pipeline_definition.pipeline_params.method_specific_params[
                                 attr_name
                             ]
                         )
+                method_files_params_model: Type[BaseModel] = get_param_model(
+                    method_name=method.name,
+                    param_docs=get_param_docs(analysis_method_func),
+                    file_params=True,
+                )
+                attrs_file = {}
+                for (
+                    attr_name,
+                    field_info,
+                ) in method_files_params_model.model_fields.items():
+                    if attr_name in [
+                        self.pipeline_definition.pipeline_input_file_names.keys()
+                    ]:
+                        if (
+                            len(
+                                self.pipeline_definition.pipeline_input_file_names[
+                                    attr_name
+                                ]
+                            )
+                            == 1
+                        ):
+                            self.pipeline.input_file_path = (
+                                self.pipeline.input_file_path[0]
+                            )
+                            attrs_file[attr_name] = (
+                                self.pipeline_definition.pipeline_input_file_names[
+                                    attr_name
+                                ][0]
+                            )
+                        else:
+                            attrs_file[attr_name] = (
+                                self.pipeline_definition.pipeline_input_file_names[
+                                    attr_name
+                                ]
+                            )
                 # create a model instance to validate the inputs
-                method_params = method_params_model(**attr)
+                method_params = method_non_files_params_model(**attrs_non_file)
                 event_loop.run_until_complete(
                     analysis_method_func(**method_params.model_dump())
                 )

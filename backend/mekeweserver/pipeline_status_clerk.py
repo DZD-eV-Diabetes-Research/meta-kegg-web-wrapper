@@ -14,6 +14,7 @@ from mekeweserver.model import (
     MetaKeggPipelineInputParamsDocs,
     MetaKeggPipelineAnalysisMethodDocs,
     MetaKeggPipelineInputParamsValues,
+    MetaKeggPipelineInputParamsValuesUpdate,
 )
 from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
@@ -47,7 +48,7 @@ class MetaKeggPipelineStateManager:
         return result
 
     def init_new_pipeline_run(
-        self, params: MetaKeggPipelineInputParamsValues
+        self, params: MetaKeggPipelineInputParamsValuesUpdate
     ) -> MetaKeggPipelineTicket:
         ticket = MetaKeggPipelineTicket()
         pipeline_status = MetaKeggPipelineDef(
@@ -55,7 +56,9 @@ class MetaKeggPipelineStateManager:
             place_in_queue=None,
             ticket=ticket,
             pipeline_input_file_names=None,
-            pipeline_params=params,
+            pipeline_params=MetaKeggPipelineInputParamsValues(
+                **params.model_dump(exclude_unset=True)
+            ),
         )
         self.set_pipeline_run_definition(pipeline_status)
         return ticket
