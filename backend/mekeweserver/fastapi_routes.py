@@ -202,11 +202,12 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="""
         Update the pipeline params of an allready existing pipeline run definition. 
         The pipeline must **NOT** be started via `/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}` allready. 
-        Only provided params get updated. You dont have to supply all params every PATCH call.""",
+        Only provided params get updated. You dont have to supply all params every PATCH call.  
+        For setting `file`-based parameters use the endpoint `/api/pipeline/{pipeline_ticket_id}/upload`""",
         tags=["Pipeline"],
     )
     @limiter.limit(f"10/minute")
-    async def update_a_metakegg_pipeline_run_definition(
+    async def update_metakegg_pipeline_non_file_parameters(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
         pipeline_params: Annotated[MetaKeggPipelineInputParamsValuesUpdate, Body()],
@@ -252,6 +253,10 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def attach_file_to_meta_kegg_pipeline_run_definition(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
+        param_name: str = Query(
+            default="input_file_path",
+            description="Upload the file as parameter input for a specific parameter. See `/api/{analysis_method_name}/params` to find all parameter that accept file(s) uploads.",
+        ),
         file: UploadFile = File(...),
     ) -> MetaKeggPipelineDef:
         return MetaKeggPipelineStateManager(

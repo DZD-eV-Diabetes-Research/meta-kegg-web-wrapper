@@ -37,6 +37,7 @@ class MetaKeggPipelineStateManager:
             self.REDIS_NAME_PIPELINE_STATES
         ).values()
         for raw_definition in raw_definitions:
+            print("raw_definition", raw_definition)
             definition = MetaKeggPipelineDef.model_validate_json(raw_definition)
             if filter_state is not None and definition.state == filter_state:
                 result.append(definition)
@@ -83,7 +84,7 @@ class MetaKeggPipelineStateManager:
         )
 
     def attach_pipeline_run_input_file(
-        self, ticket_id: uuid.UUID, upload_file_object: UploadFile
+        self, ticket_id: uuid.UUID, param_name: str, upload_file_object: UploadFile
     ) -> MetaKeggPipelineDef:
         if upload_file_object.filename is None:
             upload_file_object.filename = uuid.uuid4().hex
@@ -97,7 +98,7 @@ class MetaKeggPipelineStateManager:
 
         # define storage path for file
         internal_file_path = Path(
-            PurePath(pipeline_status.get_input_file_dir(), clean_file_name)
+            PurePath(pipeline_status.get_input_file_dir(param_name), clean_file_name)
         )
         internal_file_dir = internal_file_path.parent
         internal_file_dir.mkdir(parents=True, exist_ok=True)
@@ -107,11 +108,11 @@ class MetaKeggPipelineStateManager:
             target_file.write(upload_file_object.file.read())
 
         # define file as pipeline input file
-        if pipeline_status.pipeline_input_file_names is None:
+        if pipeline_status.pipeline_input_file_names[param_name] is None:
             # ToDo: why is this nessesary? Why is default_factory not creating an empty list here?
-            pipeline_status.pipeline_input_file_names = []
+            pipeline_status.pipeline_input_file_names[param_name] = []
 
-        pipeline_status.pipeline_input_file_names.append(clean_file_name)
+        pipeline_status.pipeline_input_file_names[param_name].append(clean_file_name)
         self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 

@@ -120,7 +120,7 @@ UNSET = []
 
 class MetaKeggPipelineInputParamDocItem(BaseModel):
     name: str
-    type: Literal["str", "int", "float", "bool"] = "str"
+    type: Literal["str", "int", "float", "bool", "file"] = "str"
     is_list: bool = False
     required: bool = False
     default: Optional[
@@ -209,17 +209,22 @@ class MetaKeggPipelineInputParamsDesc(Enum):
 
 
 # some params need special handling and will not be presented to the api
-metaKegg_param_exclude = ["input_file_path", "folder_extension", "output_folder_name"]
+metaKegg_param_exclude = ["folder_extension", "output_folder_name"]
 
 
 class MetaKeggPipelineInputParamsDocsTypeOverride(Enum):
+    input_file_path = List[Path]
     input_label = List[str]
+
+
+param_types_map = {"int": int, "bool": bool, "float": float, "str": str, "file": Path}
 
 
 def get_param_model(
     method_name: str,
     param_docs: List[MetaKeggPipelineInputParamDocItem],
     make_all_params_optional: bool = False,
+    exclude_file_params: bool = False,
 ) -> Type[BaseModel]:
     params = {}
     """from pydantic create_model docs:
@@ -227,9 +232,11 @@ def get_param_model(
             `<name>=(<type>, <default value>)`, `<name>=(<type>, <FieldInfo>)`, or `typing.Annotated[<type>, <FieldInfo>]`.
             Any additional metadata in `typing.Annotated[<type>, <FieldInfo>, ...]` will be ignored.
     """
-    types_map = {"int": int, "bool": bool, "float": float, "str": str}
+
     for par_doc in param_docs:
-        type_annotation = types_map[par_doc.type]
+        if exclude_file_params and par_doc.type == "file":
+            continue
+        type_annotation = param_types_map[par_doc.type]
         if par_doc.is_list:
             type_annotation = List[type_annotation]
         if not par_doc.required or make_all_params_optional:
@@ -279,6 +286,7 @@ def _get_param_doc(
         and get_args(annotation)[1] == type(None)
     ):
         # We have an "Optional" annotation
+        # UNder the hood "Optional" is Union[<ActualType>, None]
         # Union and len(get_args(annotation)) == 2 and get_args(annotation)[1] is None == Optional
         annotation = get_args(annotation)[0]
         return _get_param_doc(
@@ -290,8 +298,11 @@ def _get_param_doc(
             is_override=is_override,
         )
     if get_origin(annotation) == Union:
-        # we dont handle Union options. we just take the first option into account
-        annotation = get_args(annotation)[0]
+        # we dont handle Union options. we just take the first option into account or the non str one
+        if get_args(annotation)[0] == str:
+            annotation = get_args(annotation)[1]
+        else:
+            annotation = get_args(annotation)[0]
         return _get_param_doc(
             name,
             annotation,
@@ -312,7 +323,7 @@ def _get_param_doc(
         )
     return MetaKeggPipelineInputParamDocItem(
         name=name,
-        type=annotation.__name__,
+        type=next(k for k, v in param_types_map.items() if v == annotation),
         required=not is_optional,
         is_list=is_list,
         default=default,
@@ -346,7 +357,10 @@ GlobalParamModel: Type[BaseModel] = get_param_model(
     "Global", get_param_docs(PipelineAsync.__init__)
 )
 GlobalParamModelUpdate: Type[BaseModel] = get_param_model(
-    "Global", get_param_docs(PipelineAsync.__init__), make_all_params_optional=True
+    "Global",
+    get_param_docs(PipelineAsync.__init__),
+    make_all_params_optional=True,
+    exclude_file_params=True,
 )
 
 
@@ -396,7 +410,9 @@ class MetaKeggPipelineDef(BaseModel):
     )
     pipeline_params: MetaKeggPipelineInputParamsValues
     pipeline_analyses_method: MetaKeggPipelineAnalysisMethod | None = None
-    pipeline_input_file_names: Optional[List[str]] = Field(default_factory=list)
+    pipeline_input_file_names: Dict[str, List[str]] = Field(
+        description="Uploaded file per parameter", default_factory=dict
+    )
     pipeline_output_zip_file_name: Optional[str] = Field(default=None)
     created_at_utc: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc)
@@ -407,26 +423,31 @@ class MetaKeggPipelineDef(BaseModel):
     def get_files_base_dir(self) -> Path:
         return Path(PurePath(config.PIPELINE_RUNS_CACHE_DIR, self.ticket.id.hex))
 
-    def get_input_files_path(self, filename: str = None) -> Optional[Path]:
+    def get_input_files_path(
+        self, parameter: str, filename: str = None
+    ) -> Optional[Path]:
         basepath = self.get_input_file_dir()
         return next(
             (
-                Path(PurePath(basepath, file))
+                Path(PurePath(basepath, parameter, file))
                 for file in self.pipeline_input_file_names
                 if file == filename
             ),
             None,
         )
 
-    def get_input_files_pathes(self) -> List[Path]:
+    def get_input_files_pathes(
+        self,
+        parameter: str,
+    ) -> List[Path]:
         basepath = self.get_input_file_dir()
         return [
-            Path(PurePath(basepath, filename))
+            Path(PurePath(basepath, parameter, filename))
             for filename in self.pipeline_input_file_names
         ]
 
-    def get_input_file_dir(self) -> Path:
-        return Path(PurePath(self.get_files_base_dir(), "input"))
+    def get_input_file_dir(self, parameter: str) -> Path:
+        return Path(PurePath(self.get_files_base_dir(), "input", parameter))
 
     def get_output_files_dir(self) -> Path:
         return Path(PurePath(self.get_files_base_dir(), "output"))
