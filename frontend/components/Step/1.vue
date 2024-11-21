@@ -8,9 +8,9 @@
                     <div class="p-4" style="text-align: left;">
                         <p>After uploading the file(s) you can</p>
                         <p>delete them manually. </p>
-                        <p>Otherwise the files will be deleted</p> 
+                        <p>Otherwise the files will be deleted</p>
                         <p>automatically after {{ (configStore.config?.pipeline_ticket_expire_time_sec ?? 86400) /
-                            3600}} hours.</p>
+                            3600 }} hours.</p>
                     </div>
                 </template>
             </UPopover>
@@ -39,8 +39,14 @@
         </UModal>
     </div>
     <div v-if="hasInputFiles">
-        <p> Uploaded Files </p>
-        <p v-for="item in pipelineStore.pipelineStatus?.pipeline_input_file_names" key="item">{{ item }}</p>
+        <p class="text-lg" style="margin-top: 1%;" >Uploaded Files</p>
+        <div v-for="(item, index) in pipelineStore.pipelineStatus?.pipeline_input_file_names" :key="item"
+            style="display: flex; align-items: center; justify-content: center;">
+            <p class="text-base">{{index + 1}}. {{ item }}</p>
+            <UButton variant="link" color="red" :padded="true" @click="deleteFile(item)">
+                <UIcon name="i-heroicons-trash" class="w-5 h-5" style="padding-bottom: 1%;"/>
+            </UButton>
+        </div>
     </div>
 </template>
 
@@ -88,6 +94,13 @@ async function printUploadChange(event: Event) {
     }
     const status = await $fetch<PipelineStatus>(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
     pipelineStore.pipelineStatus = status
+}
+
+async function deleteFile(filenName:string) {
+    await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/remove/${filenName}`, {
+            method: 'DELETE',
+        })
+    pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
 }
 
 </script>

@@ -58,7 +58,7 @@ function initializeFormState() {
 
     allParams.forEach(field => {
         if (typeof field === 'object' && field !== null && 'name' in field) {
-            if (field.name === 'input_label' && pipelineStore.selectedMethod !== 'multiple_inputs') {
+            if (field.name === 'input_label' && pipelineStore.selectedMethod !== '_inputs') {
                 pipelineStore.formState[field.name] = ["null"];
             } else if ('is_list' in field && field.is_list) {
                 pipelineStore.formState[field.name] = Array.isArray(field.default) ? field.default : [];
