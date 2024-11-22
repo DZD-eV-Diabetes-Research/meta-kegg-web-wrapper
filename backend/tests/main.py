@@ -79,8 +79,6 @@ def shutdown_mekeweserver_and_backgroundworker():
     mekeweserver_process.terminate()
     time.sleep(5)
     print("KILL SERVER")
-
-    # YOU ARE HERE! THIS DOES NOT KILL THE BACKGORUND WORKER PROCESS
     mekeweserver_process.kill()
     mekeweserver_process.join()
     mekeweserver_process.close()

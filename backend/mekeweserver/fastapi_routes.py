@@ -271,7 +271,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/upload
     @mekewe_router.delete(
-        "/pipeline/{pipeline_ticket_id}/remove/{file_name}",
+        "/pipeline/{pipeline_ticket_id}/remove/{param_name}/{file_name}",
         response_model=MetaKeggPipelineDef,
         description="Remove a file from an non started/queued pipeline-run definition",
         tags=["Pipeline"],
@@ -279,6 +279,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     @limiter.limit(f"5/minute")
     async def remove_file_from_meta_kegg_pipeline_run_definition(
         request: Request,
+        param_name: str,
         file_name: str,
         pipeline_ticket_id: uuid.UUID,
     ) -> MetaKeggPipelineDef:
@@ -286,8 +287,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
         return MetaKeggPipelineStateManager(
             redis_client=redis
         ).remove_pipeline_run_input_file(
-            pipeline_ticket_id,
-            file_name,
+            ticket_id=pipeline_ticket_id,
+            param_name=param_name,
+            file_name=file_name,
             raise_exception_if_not_exists=pipelinerun_not_found_exception,
         )
 
