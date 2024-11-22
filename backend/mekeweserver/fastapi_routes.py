@@ -246,7 +246,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/upload
     @mekewe_router.post(
-        "/pipeline/{pipeline_ticket_id}/upload",
+        "/pipeline/{pipeline_ticket_id}/file/upload/{param_name}",
         response_model=MetaKeggPipelineDef,
         description="Add a file to an non started/queued pipeline-run definition",
         tags=["Pipeline"],
@@ -255,10 +255,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def attach_file_to_meta_kegg_pipeline_run_definition(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
-        param_name: str = Query(
-            default="input_file_path",
-            description="Upload the file as parameter input for a specific parameter. See `/api/{analysis_method_name}/params` to find all parameter that accept file(s) uploads.",
-        ),
+        param_name: str,
         file: UploadFile = File(...),
     ) -> MetaKeggPipelineDef:
         return MetaKeggPipelineStateManager(
@@ -271,7 +268,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/upload
     @mekewe_router.delete(
-        "/pipeline/{pipeline_ticket_id}/remove/{param_name}/{file_name}",
+        "/pipeline/{pipeline_ticket_id}/file/remove/{param_name}/{file_name}",
         response_model=MetaKeggPipelineDef,
         description="Remove a file from an non started/queued pipeline-run definition",
         tags=["Pipeline"],

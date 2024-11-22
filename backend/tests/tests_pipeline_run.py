@@ -105,9 +105,9 @@ def test_single_input_gene_pipeline_run():
         PurePath(Path(__file__).parent, "provisioning_data/single_input_genes.xlsx")
     )
     with open(test_upload_file_single_input_gene_path, "rb") as input_file:
-
+        param_name = "input_file_path"
         res = req(
-            f"/api/pipeline/{pipeline_ticket_id}/upload",
+            f"/api/pipeline/{pipeline_ticket_id}/file/upload/{param_name}",
             method="post",
             form_file=("single_input_genes.xlsx", input_file),
         )
