@@ -289,7 +289,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         ).remove_pipeline_run_input_file(
             ticket_id=pipeline_ticket_id,
             param_name=param_name,
-            file_name=file_name,
+            removefile_name=file_name,
             raise_exception_if_not_exists=pipelinerun_not_found_exception,
         )
 
