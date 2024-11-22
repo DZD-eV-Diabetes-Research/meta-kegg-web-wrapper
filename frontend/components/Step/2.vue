@@ -142,8 +142,8 @@ const allFilesUploaded = computed(() => {
         (inputFileNames?.[button.name]?.length ?? 0) > 0
     )
 
-    pipelineStore.uploadCheck = hasInputFile && allMethodSpecificFilesUploaded
-    return hasInputFile && allMethodSpecificFilesUploaded
+    pipelineStore.uploadCheck = !(hasInputFile && allMethodSpecificFilesUploaded)
+    return !(hasInputFile && allMethodSpecificFilesUploaded)
 })
 
 </script>

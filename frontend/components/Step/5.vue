@@ -29,7 +29,7 @@
             </UButton>
         </div>
     </div>
-    <div v-else>
+    <div v-else-if="pipelineStore.errorMessage">
         <h1 class="text-3xl font-bold" style="color: red; margin: 1% 0%">There seems to be an error: {{
             pipelineStore.errorMessage }}
         </h1>

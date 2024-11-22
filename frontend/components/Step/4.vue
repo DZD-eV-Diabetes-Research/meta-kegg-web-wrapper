@@ -28,12 +28,12 @@ async function startPipeline() {
     isMaxPlaceSet.value = false
     pipelineStore.uploadErrorMessage = ""
     pipelineStore.requiredFieldsError = ""
+    pipelineStore.errorMessage = ""
+    pipelineStore.errorStack = ""
     
 
-    if (!pipelineStore.uploadCheck) {
-        console.log(pipelineStore.uploadErrorMessage);
+    if (pipelineStore.uploadCheck) {
         pipelineStore.uploadErrorMessage = "You need to upload all required file(s)"
-        console.log(pipelineStore.uploadErrorMessage);
         pipelineStore.isLoading = false
         pipelineStore.pipelineStart = false
         return
