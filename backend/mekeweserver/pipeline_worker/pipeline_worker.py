@@ -65,14 +65,12 @@ class PipelineWorker(Process):
                     exception_count
                     < config.RESTART_BACKGROUND_WORKER_ON_EXCEPTION_N_TIMES
                 ):
-                    print("exception_count", exception_count)
                     log.error(e, exc_info=True)
                     try:
                         print("INCREASE", exception_count)
                         exception_count = redis_client.incr(
                             self.WORKER_EXCEPTION_COUNTER_REDIS_KEY, 1
                         )
-                        print("INCREASED", exception_count)
                     except:
                         raise e
                 else:

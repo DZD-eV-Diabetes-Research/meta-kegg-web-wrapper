@@ -89,7 +89,7 @@ def test_single_input_gene_pipeline_run():
     res = req(
         f"/api/pipeline/{pipeline_ticket_id}",
         method="patch",
-        q={"count_threshold": 2},
+        b={"global_params": {}, "method_specific_params": {"count_threshold": 2}},
     )
     dict_must_contain(
         res,
@@ -97,7 +97,7 @@ def test_single_input_gene_pipeline_run():
         exception_dict_identifier="PATCH-'/api/pipeline/{pipeline_ticket_id}'-response",
     )
     dict_must_contain(
-        res["pipeline_params"],
+        res["pipeline_params"]["method_specific_params"],
         required_keys_and_val={"count_threshold": 2},
         exception_dict_identifier="PATCH-'/api/pipeline/{pipeline_ticket_id}'-response",
     )
@@ -105,16 +105,18 @@ def test_single_input_gene_pipeline_run():
         PurePath(Path(__file__).parent, "provisioning_data/single_input_genes.xlsx")
     )
     with open(test_upload_file_single_input_gene_path, "rb") as input_file:
-
+        param_name = "input_file_path"
         res = req(
-            f"/api/pipeline/{pipeline_ticket_id}/upload",
+            f"/api/pipeline/{pipeline_ticket_id}/file/upload/{param_name}",
             method="post",
             form_file=("single_input_genes.xlsx", input_file),
         )
     dict_must_contain(
         res,
         required_keys_and_val={
-            "pipeline_input_file_names": ["single_input_genes.xlsx"]
+            "pipeline_input_file_names": {
+                "input_file_path": ["single_input_genes.xlsx"]
+            }
         },
         exception_dict_identifier="POST-'/api/pipeline/{pipeline_ticket_id}/upload'-response",
     )

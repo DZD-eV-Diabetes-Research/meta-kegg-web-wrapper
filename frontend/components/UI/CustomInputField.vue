@@ -6,26 +6,35 @@
             </template>
         </UButton>
         <input ref="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" type="file"
-            name="fileUpload" id="fileUpload" @change="handleFileChange" />
+            name="fileUpload" id="fileUpload" @input="handleFileChange" />
     </div>
 </template>
 
 <script setup lang="ts">
-
 interface Props {
     label: string;
+    name: string;
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-    (e: 'change', event: Event): void
+    (e: 'input', event: Event, name: string): void
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 
-
 const handleFileChange = (event: Event) => {
-    emit('change', event)
+    emit('input', event, props.name)
 }
 </script>
+
+<style scoped>
+.relative {
+    margin: 0% 1%;
+}
+
+.relative:hover {
+    cursor: pointer !important;
+}
+</style>

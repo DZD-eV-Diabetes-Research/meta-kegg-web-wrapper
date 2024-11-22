@@ -18,7 +18,7 @@ export const usePipelineStore = defineStore('PipelineStore', {
             requiredFieldsError: "",
             selectedMethod: "single_input_genes",
             ticket_id: "",
-            uploadCheck: false,
+            uploadCheck: true,
             uploadErrorMessage: "",
         }
     },

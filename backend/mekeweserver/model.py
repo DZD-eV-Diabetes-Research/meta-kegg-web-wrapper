@@ -23,8 +23,10 @@ from mekeweserver.config import Config, get_config
 import datetime
 from pathlib import Path, PurePath
 from metaKEGG import PipelineAsync
+from mekeweserver.log import get_logger
 
 config: Config = get_config()
+log = get_logger()
 
 
 class MetaKeggPipelineAnalysisMethods(Enum):
@@ -120,7 +122,7 @@ UNSET = []
 
 class MetaKeggPipelineInputParamDocItem(BaseModel):
     name: str
-    type: Literal["str", "int", "float", "bool"] = "str"
+    type: Literal["str", "int", "float", "bool", "file"] = "str"
     is_list: bool = False
     required: bool = False
     default: Optional[
@@ -209,17 +211,26 @@ class MetaKeggPipelineInputParamsDesc(Enum):
 
 
 # some params need special handling and will not be presented to the api
-metaKegg_param_exclude = ["input_file_path", "folder_extension", "output_folder_name"]
+metaKegg_param_exclude = ["folder_extension", "output_folder_name"]
 
 
 class MetaKeggPipelineInputParamsDocsTypeOverride(Enum):
+    input_file_path = List[Path]
     input_label = List[str]
+
+
+class MetaKeggPipelineInputParamsDefaultValOverrideFactory(Enum):
+    input_label = partial(list)
+
+
+param_types_map = {"int": int, "bool": bool, "float": float, "str": str, "file": Path}
 
 
 def get_param_model(
     method_name: str,
     param_docs: List[MetaKeggPipelineInputParamDocItem],
     make_all_params_optional: bool = False,
+    file_params: Optional[bool] = None,
 ) -> Type[BaseModel]:
     params = {}
     """from pydantic create_model docs:
@@ -227,19 +238,31 @@ def get_param_model(
             `<name>=(<type>, <default value>)`, `<name>=(<type>, <FieldInfo>)`, or `typing.Annotated[<type>, <FieldInfo>]`.
             Any additional metadata in `typing.Annotated[<type>, <FieldInfo>, ...]` will be ignored.
     """
-    types_map = {"int": int, "bool": bool, "float": float, "str": str}
+
     for par_doc in param_docs:
-        type_annotation = types_map[par_doc.type]
+        if file_params == False and par_doc.type == "file":
+            continue
+        if file_params == True and par_doc.type != "file":
+            continue
+        type_annotation = param_types_map[par_doc.type]
         if par_doc.is_list:
             type_annotation = List[type_annotation]
         if not par_doc.required or make_all_params_optional:
             type_annotation = Optional[type_annotation]
-        if make_all_params_optional:
-            default = None if par_doc.default == UNSET else par_doc.default
-            params[par_doc.name] = (
-                type_annotation,
-                Field(default=default, description=par_doc.description),
+        if par_doc.name in [
+            f.name for f in MetaKeggPipelineInputParamsDefaultValOverrideFactory
+        ]:
+            default_factory = MetaKeggPipelineInputParamsDefaultValOverrideFactory[
+                par_doc.name
+            ].value.func
+            field = Field(
+                default_factory=default_factory, description=par_doc.description
             )
+            params[par_doc.name] = (type_annotation, field)
+        elif make_all_params_optional:
+            default = None if par_doc.default == UNSET else par_doc.default
+            field = Field(default=default, description=par_doc.description)
+            params[par_doc.name] = (type_annotation, field)
         elif par_doc.default == UNSET:
             params[par_doc.name] = (
                 type_annotation,
@@ -279,6 +302,7 @@ def _get_param_doc(
         and get_args(annotation)[1] == type(None)
     ):
         # We have an "Optional" annotation
+        # UNder the hood "Optional" is Union[<ActualType>, None]
         # Union and len(get_args(annotation)) == 2 and get_args(annotation)[1] is None == Optional
         annotation = get_args(annotation)[0]
         return _get_param_doc(
@@ -290,8 +314,11 @@ def _get_param_doc(
             is_override=is_override,
         )
     if get_origin(annotation) == Union:
-        # we dont handle Union options. we just take the first option into account
-        annotation = get_args(annotation)[0]
+        # we dont handle Union options. we just take the first option into account or the non str one
+        if get_args(annotation)[0] == str:
+            annotation = get_args(annotation)[1]
+        else:
+            annotation = get_args(annotation)[0]
         return _get_param_doc(
             name,
             annotation,
@@ -312,7 +339,7 @@ def _get_param_doc(
         )
     return MetaKeggPipelineInputParamDocItem(
         name=name,
-        type=annotation.__name__,
+        type=next(k for k, v in param_types_map.items() if v == annotation),
         required=not is_optional,
         is_list=is_list,
         default=default,
@@ -325,16 +352,18 @@ def _get_param_doc(
 
 
 def get_param_docs(
-    obj: Awaitable | Callable,
+    analyses_method: Awaitable | Callable | partial,
 ) -> List[MetaKeggPipelineInputParamDocItem]:
+    if isinstance(analyses_method, partial):
+        analyses_method = analyses_method.func
     params: List[MetaKeggPipelineInputParamDocItem] = []
-    for name, type_hint in get_type_hints(obj).items():
+    for name, type_hint in get_type_hints(analyses_method).items():
         if name in metaKegg_param_exclude:
             continue
         if name == "return":
             continue
         default = UNSET
-        param = inspect.signature(obj).parameters.get(name)
+        param = inspect.signature(analyses_method).parameters.get(name)
         if param and param.default is not inspect.Parameter.empty:
             default = param.default
         doc = _get_param_doc(name, type_hint, default=default)
@@ -342,21 +371,40 @@ def get_param_docs(
     return params
 
 
+def find_parameter_docs_by_name(
+    param_name: str,
+) -> MetaKeggPipelineInputParamDocItem | None:
+    # search in global params
+    param_docs = get_param_docs(PipelineAsync.__init__)
+    for param_doc in param_docs:
+        if param_doc.name == param_name:
+            return param_doc
+    # search in analyses methods
+    for analyses_method in MetaKeggPipelineAnalysisMethods:
+        param_docs = get_param_docs(analyses_method.value)
+        for param_doc in param_docs:
+            if param_doc.name == param_name:
+                return param_doc
+
+
 GlobalParamModel: Type[BaseModel] = get_param_model(
     "Global", get_param_docs(PipelineAsync.__init__)
 )
-GlobalParamModelUpdate: Type[BaseModel] = get_param_model(
-    "Global", get_param_docs(PipelineAsync.__init__), make_all_params_optional=True
+GlobalParamModelOptional: Type[BaseModel] = get_param_model(
+    "Global",
+    get_param_docs(PipelineAsync.__init__),
+    make_all_params_optional=True,
+    file_params=False,
 )
 
 
 class MetaKeggPipelineInputParamsValues(BaseModel):
-    global_params: GlobalParamModel = Field()
+    global_params: GlobalParamModelOptional = Field()
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
 
-class MetaKeggPipelineInputParamsValuesUpdate(BaseModel):
-    global_params: GlobalParamModelUpdate = Field()
+class MetaKeggPipelineInputParamsValuesAllOptional(BaseModel):
+    global_params: GlobalParamModelOptional = Field()
     method_specific_params: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -394,9 +442,11 @@ class MetaKeggPipelineDef(BaseModel):
         description="If the state of a pipeline run is `success`, the result can be downloaded from this path.",
         examples=[None],
     )
-    pipeline_params: MetaKeggPipelineInputParamsValues
+    pipeline_params: MetaKeggPipelineInputParamsValuesAllOptional
     pipeline_analyses_method: MetaKeggPipelineAnalysisMethod | None = None
-    pipeline_input_file_names: Optional[List[str]] = Field(default_factory=list)
+    pipeline_input_file_names: Optional[Dict[str, List[str]]] = Field(
+        description="Uploaded file per parameter", default_factory=dict
+    )
     pipeline_output_zip_file_name: Optional[str] = Field(default=None)
     created_at_utc: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc)
@@ -407,26 +457,36 @@ class MetaKeggPipelineDef(BaseModel):
     def get_files_base_dir(self) -> Path:
         return Path(PurePath(config.PIPELINE_RUNS_CACHE_DIR, self.ticket.id.hex))
 
-    def get_input_files_path(self, filename: str = None) -> Optional[Path]:
-        basepath = self.get_input_file_dir()
-        return next(
+    def get_input_files_path(
+        self, parameter: str, filename: str = None, not_exists_ok: bool = True
+    ) -> Optional[Path]:
+        basepath = self.get_input_file_dir(parameter)
+        result = next(
             (
                 Path(PurePath(basepath, file))
-                for file in self.pipeline_input_file_names
+                for file in self.pipeline_input_file_names[parameter]
                 if file == filename
             ),
             None,
         )
+        if result is None and not not_exists_ok:
+            raise ValueError(
+                f"Can not find any file for parameter '{parameter}' with name '{filename}' at basepath '{basepath.absolute()}'"
+            )
+        return result
 
-    def get_input_files_pathes(self) -> List[Path]:
+    def get_input_files_pathes(
+        self,
+        parameter: str,
+    ) -> List[Path]:
         basepath = self.get_input_file_dir()
         return [
-            Path(PurePath(basepath, filename))
+            Path(PurePath(basepath, parameter, filename))
             for filename in self.pipeline_input_file_names
         ]
 
-    def get_input_file_dir(self) -> Path:
-        return Path(PurePath(self.get_files_base_dir(), "input"))
+    def get_input_file_dir(self, parameter: str) -> Path:
+        return Path(PurePath(self.get_files_base_dir(), "input", parameter))
 
     def get_output_files_dir(self) -> Path:
         return Path(PurePath(self.get_files_base_dir(), "output"))

@@ -71,11 +71,15 @@ def run_server(env: Dict = None):
 
     log = get_logger()
     log.info(f"Start MetaKEGG Web API Server version '{mekewe_server_version}'")
-    from mekeweserver.config import env_file_path
+    from mekeweserver.config import env_file_path, yaml_file_path
 
     log.info(
         f"Load env variables from file '{Path(env_file_path).resolve()}' (if exists)"
     )
+    log.info(
+        f"Load yaml variables from file '{Path(yaml_file_path).resolve()}' (if exists)"
+    )
+
     log.debug("----CONFIG-----")
     log.debug(yaml.dump(json.loads(config.model_dump_json()), sort_keys=False))
     log.debug("----CONFIG-END-----")

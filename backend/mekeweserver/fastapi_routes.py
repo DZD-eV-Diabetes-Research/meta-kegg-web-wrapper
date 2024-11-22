@@ -51,11 +51,11 @@ from mekeweserver.model import (
     MetaKeggPipelineInputParamsDesc,
     MetaKeggPipelineAnalysisMethods,
     MetaKeggPipelineInputParamsValues,
-    MetaKeggPipelineInputParamsValuesUpdate,
+    MetaKeggPipelineInputParamsValuesAllOptional,
     get_param_docs,
     get_param_model,
     GlobalParamModel,
-    GlobalParamModelUpdate,
+    GlobalParamModelOptional,
     MetaKeggPipelineDefStates,
 )
 
@@ -157,13 +157,13 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def initialize_a_metakegg_pipeline_run_definition(
         request: Request,
         pipeline_params: Annotated[
-            Optional[MetaKeggPipelineInputParamsValues], Body()
+            Optional[MetaKeggPipelineInputParamsValuesAllOptional], Body()
         ] = None,
         # pipeline_params: Annotated[MetaKeggPipelineInputParamsDocs, Query()] = None,
     ) -> MetaKeggPipelineTicket:
         if pipeline_params is None:
-            pipeline_params = MetaKeggPipelineInputParamsValues(
-                global_params={"input_label": []}, method_specific_params={}
+            pipeline_params = MetaKeggPipelineInputParamsValuesAllOptional(
+                global_params={}, method_specific_params={}
             )
         ticket: MetaKeggPipelineTicket = MetaKeggPipelineStateManager(
             redis_client=redis
@@ -202,14 +202,17 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="""
         Update the pipeline params of an allready existing pipeline run definition. 
         The pipeline must **NOT** be started via `/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}` allready. 
-        Only provided params get updated. You dont have to supply all params every PATCH call.""",
+        Only provided params get updated. You dont have to supply all params every PATCH call.  
+        For setting `file`-based parameters use the endpoint `/api/pipeline/{pipeline_ticket_id}/upload`""",
         tags=["Pipeline"],
     )
     @limiter.limit(f"10/minute")
-    async def update_a_metakegg_pipeline_run_definition(
+    async def update_metakegg_pipeline_non_file_parameters(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
-        pipeline_params: Annotated[MetaKeggPipelineInputParamsValuesUpdate, Body()],
+        pipeline_params: Annotated[
+            MetaKeggPipelineInputParamsValuesAllOptional, Body()
+        ],
     ) -> MetaKeggPipelineDef:
 
         # get current params from db
@@ -243,7 +246,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/upload
     @mekewe_router.post(
-        "/pipeline/{pipeline_ticket_id}/upload",
+        "/pipeline/{pipeline_ticket_id}/file/upload/{param_name}",
         response_model=MetaKeggPipelineDef,
         description="Add a file to an non started/queued pipeline-run definition",
         tags=["Pipeline"],
@@ -252,11 +255,12 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def attach_file_to_meta_kegg_pipeline_run_definition(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
+        param_name: str,
         file: UploadFile = File(...),
     ) -> MetaKeggPipelineDef:
         return MetaKeggPipelineStateManager(
             redis_client=redis
-        ).attach_pipeline_run_input_file(pipeline_ticket_id, file)
+        ).attach_pipeline_run_input_file(pipeline_ticket_id, param_name, file)
 
     analysis_method_names_type_hint = Literal[
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])
@@ -264,7 +268,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/upload
     @mekewe_router.delete(
-        "/pipeline/{pipeline_ticket_id}/remove/{file_name}",
+        "/pipeline/{pipeline_ticket_id}/file/remove/{param_name}/{file_name}",
         response_model=MetaKeggPipelineDef,
         description="Remove a file from an non started/queued pipeline-run definition",
         tags=["Pipeline"],
@@ -272,6 +276,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
     @limiter.limit(f"5/minute")
     async def remove_file_from_meta_kegg_pipeline_run_definition(
         request: Request,
+        param_name: str,
         file_name: str,
         pipeline_ticket_id: uuid.UUID,
     ) -> MetaKeggPipelineDef:
@@ -279,8 +284,9 @@ def get_api_router(app: FastAPI) -> APIRouter:
         return MetaKeggPipelineStateManager(
             redis_client=redis
         ).remove_pipeline_run_input_file(
-            pipeline_ticket_id,
-            file_name,
+            ticket_id=pipeline_ticket_id,
+            param_name=param_name,
+            removefile_name=file_name,
             raise_exception_if_not_exists=pipelinerun_not_found_exception,
         )
 
