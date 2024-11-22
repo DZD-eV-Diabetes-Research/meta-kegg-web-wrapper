@@ -113,6 +113,10 @@ class MetaKeggPipelineStateManager:
         )
         internal_file_dir = internal_file_path.parent
         internal_file_dir.mkdir(parents=True, exist_ok=True)
+        # define file as pipeline input file
+        if param_name not in pipeline_status.pipeline_input_file_names:
+            # ToDo: why is this nessesary? Why is default_factory not creating an empty list here?
+            pipeline_status.pipeline_input_file_names[param_name] = []
 
         # delete old file if its "one file only" param and existent.
         if not param_doc.is_list:
@@ -126,11 +130,6 @@ class MetaKeggPipelineStateManager:
         # store file
         with open(internal_file_path, "wb") as target_file:
             target_file.write(upload_file_object.file.read())
-
-        # define file as pipeline input file
-        if param_name not in pipeline_status.pipeline_input_file_names:
-            # ToDo: why is this nessesary? Why is default_factory not creating an empty list here?
-            pipeline_status.pipeline_input_file_names[param_name] = []
 
         # check if its a re-upload and we just overwrote the file...
         if clean_file_name not in pipeline_status.pipeline_input_file_names[param_name]:
