@@ -114,7 +114,7 @@ class MetaKeggPipelineStateManager:
         internal_file_dir = internal_file_path.parent
         internal_file_dir.mkdir(parents=True, exist_ok=True)
 
-        # delete old file if it "one file only" param and existent.
+        # delete old file if its "one file only" param and existent.
         if not param_doc.is_list:
             existing_file = pipeline_status.pipeline_input_file_names[param_name]
             if existing_file:
@@ -132,7 +132,12 @@ class MetaKeggPipelineStateManager:
             # ToDo: why is this nessesary? Why is default_factory not creating an empty list here?
             pipeline_status.pipeline_input_file_names[param_name] = []
 
-        pipeline_status.pipeline_input_file_names[param_name].append(clean_file_name)
+        # check if its a re-upload and we just overwrote the file...
+        if clean_file_name not in pipeline_status.pipeline_input_file_names[param_name]:
+            # ... otherwise we just append it as a new file
+            pipeline_status.pipeline_input_file_names[param_name].append(
+                clean_file_name
+            )
         self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 
