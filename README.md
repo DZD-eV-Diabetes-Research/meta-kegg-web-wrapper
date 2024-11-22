@@ -1,6 +1,6 @@
 # MetaKeggWeb
 
-Web interfacec for https://github.com/dife-bioinformatics/metaKEGG
+Web interface for https://github.com/dife-bioinformatics/metaKEGG
 
 ![metakeggweb_screenshot](metakeggweb_screenshot.png)
 
