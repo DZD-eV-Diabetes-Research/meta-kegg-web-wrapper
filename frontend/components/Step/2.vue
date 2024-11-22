@@ -112,6 +112,10 @@ async function printUploadChange(event: Event, file_name: string) {
     }
     const status = await $fetch<PipelineStatus>(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
     pipelineStore.pipelineStatus = status
+
+    nextTick(() => {
+        console.log('All files uploaded:', allFilesUploaded.value)
+    })
 }
 
 async function deleteFile(fileName: string, file_path: string) {
@@ -125,6 +129,10 @@ async function deleteFile(fileName: string, file_path: string) {
     })
 
     pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
+
+    nextTick(() => {
+        console.log('All files uploaded:', allFilesUploaded.value)
+    })
 }
 
 const fileButtons = computed(() =>
