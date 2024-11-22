@@ -64,6 +64,10 @@ pipelineStore.parameters = parameters.value
 function newID() {
     navigateTo("/")
 }
+
+onMounted(() => {
+    pipelineStore.uploadCheck = true
+});
 </script>
 
 <style>
