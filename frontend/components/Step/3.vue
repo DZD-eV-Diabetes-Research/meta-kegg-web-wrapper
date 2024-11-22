@@ -3,70 +3,55 @@
         <h1 class="text-3xl">Step 3: (Optional) Pipeline Parameters</h1>
     </div>
     <div style="text-align: left">
-        <UAccordion
-            v-if="(pipelineStore?.globalParams && typeof pipelineStore.globalParams === 'object' && Object.keys(pipelineStore.globalParams).length > 0) ||
-                (pipelineStore?.methodSpecificParams && typeof pipelineStore.methodSpecificParams === 'object' && Object.keys(pipelineStore.methodSpecificParams).length > 0)"
-            :items="accordionItems">
+        <UAccordion v-if="hasVisibleParams" :items="accordionItems">
             <template #item="{ item }">
                 <div
                     style="border: solid; border-color: #d3f4e1; border-radius: 1%; padding: 2%; background-color: #f6fdf9;">
                     <UForm :state="pipelineStore.formState">
-                        <div v-for="field in pipelineStore?.globalParams?.filter(f => f != null)" :key="field.name">
+                        <div v-for="field in visibleGlobalParams" :key="field.name">
                             <UFormGroup
                                 v-if="field.name !== 'input_label' || pipelineStore.selectedMethod === 'multiple_inputs'"
                                 :label="formatLabel(field.name)" :required="field.required">
-
                                 <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
                                     v-model="pipelineStore.formState[field.name]"
                                     :placeholder="field.default?.toString() || ''" :type="getInputType(field.type)"
                                     @blur="handleBlur(field.name)"
                                     :color="pipelineStore.formState[`${field.name}_error`] ? 'red' : undefined" />
-
                                 <UInput v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
                                     v-model="pipelineStore.formState[field.name]"
                                     placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
                                     :color="pipelineStore.formState[`${field.name}_error`] ? 'red' : undefined" />
-
                                 <UToggle v-else-if="field.type === 'bool'" v-model="pipelineStore.formState[field.name]"
                                     @blur="handleBlur(field.name)" />
-
                                 <UTextarea v-else-if="field.type === 'List'"
                                     v-model="pipelineStore.formState[field.name]"
                                     placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
                                     :color="pipelineStore.formState[`${field.name}_error`] ? 'red' : undefined" />
-
                                 <div v-if="pipelineStore.formState[`${field.name}_error`]">
                                     <span style="color: red;">{{ pipelineStore.formState[`${field.name}_error`]
                                         }}</span>
                                 </div>
                             </UFormGroup>
                         </div>
-
-                        <div v-for="field in pipelineStore?.methodSpecificParams?.filter(f => f != null)"
-                            :key="field.name">
+                        <div v-for="field in visibleMethodSpecificParams" :key="field.name">
                             <UFormGroup
                                 v-if="field.name !== 'input_label' || pipelineStore.selectedMethod === 'multiple_inputs'"
                                 :label="formatLabel(field.name)" :required="field.required">
-
                                 <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
                                     v-model="pipelineStore.formState[field.name]"
                                     :placeholder="field.default?.toString() || ''" :type="getInputType(field.type)"
                                     @blur="handleBlur(field.name)"
                                     :color="pipelineStore.formState[`${field.name}_error`] ? 'red' : undefined" />
-
                                 <UInput v-else-if="['str', 'int', 'float'].includes(field.type) && field.is_list"
                                     v-model="pipelineStore.formState[field.name]"
                                     placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
                                     :color="pipelineStore.formState[`${field.name}_error`] ? 'red' : undefined" />
-
                                 <UToggle v-else-if="field.type === 'bool'" v-model="pipelineStore.formState[field.name]"
                                     @blur="handleBlur(field.name)" />
-
                                 <UTextarea v-else-if="field.type === 'List'"
                                     v-model="pipelineStore.formState[field.name]"
                                     placeholder="Enter items separated by commas" @blur="handleBlur(field.name)"
                                     :color="pipelineStore.formState[`${field.name}_error`] ? 'red' : undefined" />
-
                                 <div v-if="pipelineStore.formState[`${field.name}_error`]">
                                     <span style="color: red;">{{ pipelineStore.formState[`${field.name}_error`]
                                         }}</span>
@@ -84,6 +69,21 @@
 
 const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
+
+const visibleGlobalParams = computed(() =>
+    pipelineStore.globalParams?.filter(f => f != null && f.type !== 'file') || []
+)
+const visibleMethodSpecificParams = computed(() =>
+    pipelineStore.methodSpecificParams?.filter(f => f != null && f.type !== 'file') || []
+)
+
+const hasVisibleParams = computed(() =>
+    visibleGlobalParams.value.length > 0 || visibleMethodSpecificParams.value.length > 0
+)
+
+const accordionItems = ref([
+    { label: 'Pipeline Parameter Setting', content: 'Form will be rendered here' }
+]);
 
 async function handleBlur(fieldName: string) {
     const allParams = [...pipelineStore.globalParams, ...pipelineStore.methodSpecificParams];
@@ -171,13 +171,6 @@ watch(() => pipelineStore.selectedMethod, (newMethod) => {
         }
     }
 });
-
-const accordionItems = ref([
-    {
-        label: 'Pipeline Parameter Setting',
-        content: 'Form will be rendered here'
-    }
-]);
 
 </script>
 

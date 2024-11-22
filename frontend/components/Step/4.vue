@@ -30,9 +30,10 @@ async function startPipeline() {
     pipelineStore.requiredFieldsError = ""
     
 
-    if (pipelineStore.uploadCheck === false) {
-        pipelineStore.uploadErrorMessage = "You need to upload a file"
-        
+    if (!pipelineStore.uploadCheck) {
+        console.log(pipelineStore.uploadErrorMessage);
+        pipelineStore.uploadErrorMessage = "You need to upload all required file(s)"
+        console.log(pipelineStore.uploadErrorMessage);
         pipelineStore.isLoading = false
         pipelineStore.pipelineStart = false
         return
@@ -101,8 +102,10 @@ async function getStatus() {
 
 function checkRequiredFields() {
     const allParams = [...pipelineStore.globalParams, ...pipelineStore.methodSpecificParams];
+    const fileFields = ['input_file_path', 'methylation_path', 'miRNA_path'];
+    
     const emptyRequiredFields = allParams.filter(field => {
-        if (field.required) {
+        if (field.required && !fileFields.includes(field.name)) {
             if (field.type === 'bool') {
                 return pipelineStore.formState[field.name] === undefined;
             } else if (field.is_list) {
@@ -112,7 +115,7 @@ function checkRequiredFields() {
             }
         }
         return false;
-    });
+    });    
 
     if (emptyRequiredFields.length > 0) {        
         pipelineStore.requiredFieldsError = `${emptyRequiredFields.length} required field(s) cannot be empty when submitting the form.`;
@@ -123,13 +126,13 @@ function checkRequiredFields() {
     return true;
 }
 
-watch(() => pipelineStore.pipelineStatus?.pipeline_input_file_names, (newValue) => {
-    if (newValue && newValue.length > 0) {
-        pipelineStore.uploadCheck  = true
-    } else {
-        pipelineStore.uploadCheck  = false
-    }
-}, { deep: true, immediate: true })
+// watch(() => pipelineStore.pipelineStatus?.pipeline_input_file_names, (newValue) => {
+//     if (newValue && newValue.length > 0) {
+//         pipelineStore.uploadCheck  = true
+//     } else {
+//         pipelineStore.uploadCheck  = false
+//     }
+// }, { deep: true, immediate: true })
 
 
 watch(() => pipelineStore.selectedMethod, (newMethod) => {

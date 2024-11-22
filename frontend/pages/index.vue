@@ -52,6 +52,7 @@ interface Ticket_ID {
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 const { data: ticket_id } = await useFetch<Ticket_ID>(`${runtimeConfig.public.baseURL}/api/pipeline`, {
     method: "POST"
+    
 })
 
 if (ticket_id.value && healthStatus.value?.healthy) {
