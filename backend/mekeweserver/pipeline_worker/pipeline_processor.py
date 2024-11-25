@@ -136,8 +136,8 @@ class MetakeggPipelineProcessor:
                 and param_doc.name in self.pipeline_definition.pipeline_input_file_names
                 and len(
                     self.pipeline_definition.pipeline_input_file_names[param_doc.name]
-                    != 0
                 )
+                != 0
             ):
                 params[param_doc.name] = []
                 for filename in self.pipeline_definition.pipeline_input_file_names[
