@@ -119,6 +119,10 @@ class MetakeggPipelineProcessor:
         params = {}
         param_docs = get_param_docs(method)
         for param_doc in param_docs:
+            log.info(
+                "self.pipeline_definition.pipeline_input_file_names",
+                self.pipeline_definition.pipeline_input_file_names,
+            )
             if (
                 param_doc.type == "file"
                 and param_doc.name in self.pipeline_definition.pipeline_input_file_names
