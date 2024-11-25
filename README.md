@@ -32,7 +32,7 @@ Web interface for https://github.com/dife-bioinformatics/metaKEGG
 # Install and Run
 
 > [!IMPORTANT]  
-> This project is intended to run in  a Linux/Unix environment. It should also be able to run in a MS Windows environment but was not tested yet. There may be still bugs regarding Path resolutions on MS Windows.
+> This project is intended to run in  a Linux/Unix environment. It should also be able to run in a MS Windows environment but was not tested yet. There ~~may be~~ are still bugs regarding Path resolutions on MS Windows.
 
 
 ##  Option1: Run with prebuild container
@@ -164,7 +164,7 @@ If you want to MetaKeggWeb to use a custamized config yaml file, set the environ
 
 Lets create a config yaml first
 
-`C:\tmp\config.yaml`/`/tmp/config.yaml`
+`/tmp/config.yaml`
 ```yaml
 LOG_LEVEL: INFO
 PIPELINE_RUNS_CACHE_DIR: /tmp/mekewe_cache
@@ -174,8 +174,8 @@ PIPELINE_RUNS_CACHE_DIR: /tmp/mekewe_cache
 
 Now we want to set `MEKEWESERVER_YAML_CONFIG_FILE` to point to our yaml file
 
-On MS Windows:
-`set MEKEWESERVER_YAML_CONFIG_FILE="C:\tmp\config.yaml"`
+~~On MS Windows:~~
+~~`set MEKEWESERVER_YAML_CONFIG_FILE="C:\tmp\config.yaml"`~~
 
 On *nix:
 `export MEKEWESERVER_YAML_CONFIG_FILE="/tmp/config.yaml"`
