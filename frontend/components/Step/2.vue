@@ -18,8 +18,7 @@
     </div>
     <div v-if="acceptAGB" class="input-field-container">
         <UICustomInputField @input="printUploadChange" :label="inputLabel" name="input_file_path" />
-        <UICustomInputField v-for="button in fileButtons" :key="button.name" @input="printUploadChange"
-            :name="button.name" :label="formatButtonLabel(button.name)" />
+        <UICustomInputField v-for="button in fileButtons" :key="button.name" @input="printUploadChange" :name="button.name" :label="formatButtonLabel(button.name)" />
     </div>
     <div v-else style="margin-top: 1%; margin-bottom: 0.5%">
         <UButton label="Select your File" variant="outline" @click="uncheckedAGB" style="margin: 0% 1%;">
@@ -27,8 +26,7 @@
                 <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
             </template>
         </UButton>
-        <UButton v-for="button in fileButtons" :key="button.name" variant="outline"
-            :label="formatButtonLabel(button.name)" @click="uncheckedAGB" style="margin: 0% 1%;">
+        <UButton v-for="button in fileButtons" :key="button.name" variant="outline" :label="formatButtonLabel(button.name)" @click="uncheckedAGB" style="margin: 0% 1%;">
             <template #trailing>
                 <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
             </template>
@@ -47,19 +45,15 @@
         </UModal>
     </div>
     <div>
-        <p v-if="pipelineStore.pipelineStatus?.pipeline_input_file_names?.input_file_path.length > 0" class="text-lg"
-            style="margin-top: 1%; text-align: center;">Uploaded Files</p>
+        <p v-if="pipelineStore.pipelineStatus?.pipeline_input_file_names?.input_file_path.length > 0" class="text-lg" style="margin-top: 1%; text-align: center;">Uploaded Files</p>
         <div v-for="(value, key) in pipelineStore.pipelineStatus?.pipeline_input_file_names" :key="key">
             <p v-if="key === 'input_file_path' && value.length > 0"></p>
-            <p v-if="key === 'methylation_path' && value.length > 0" class="text-lg"
-                style="margin-top: 1%; text-align: center;">Methylation
+            <p v-if="key === 'methylation_file_path' && value.length > 0" class="text-lg" style="margin-top: 1%; text-align: center;">Methylation
                 Files</p>
-            <p v-if="key === 'miRNA_path' && value.length > 0" class="text-lg"
-                style="margin-top: 1%; text-align: center;">
+            <p v-if="key === 'miRNA_file_path' && value.length > 0" class="text-lg" style="margin-top: 1%; text-align: center;">
                 miRNA Files</p>
             <div style="display: flex; flex-direction: column; align-items: center;">
-                <div v-for="item in value" :key="item"
-                    style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <div v-for="item in value" :key="item" style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                     <p class="text-base" style="margin-right: 0.5rem;">{{ item }}</p>
                     <UButton variant="link" color="red" :padded="true" @click="deleteFile(item, key)">
                         <UIcon name="i-heroicons-trash" class="w-5 h-5" />

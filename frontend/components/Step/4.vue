@@ -4,11 +4,11 @@
     </div>
     <UButton @click="startPipeline">Start run</UButton>
     <div style="margin: 1%;" v-if="pipelineStore.uploadErrorMessage" class="submit-error-message">
-            <h1 class="text-2xl">{{ pipelineStore.uploadErrorMessage }}</h1>
-        </div>
+        <h1 class="text-2xl">{{ pipelineStore.uploadErrorMessage }}</h1>
+    </div>
     <div style="margin: 1%;" v-if="pipelineStore.requiredFieldsError" class="submit-error-message">
-            <h1 class="text-2xl">{{ pipelineStore.requiredFieldsError }}</h1>
-        </div>
+        <h1 class="text-2xl">{{ pipelineStore.requiredFieldsError }}</h1>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -31,7 +31,7 @@ async function startPipeline() {
     pipelineStore.errorMessage = ""
     pipelineStore.errorStack = ""
     pipelineStore.pipelineStatus.state = 'pending'
-    
+
 
     if (pipelineStore.uploadCheck) {
         pipelineStore.uploadErrorMessage = "You need to upload all required file(s)"
@@ -95,16 +95,16 @@ async function getStatus() {
     }
 
     if (pipelineStore.pipelineStatus) {
-        pipelineStore.errorMessage = pipelineStore.pipelineStatus.error ?? ""; 
-        pipelineStore.errorStack = pipelineStore.pipelineStatus.error_traceback ?? ""; 
+        pipelineStore.errorMessage = pipelineStore.pipelineStatus.error ?? "";
+        pipelineStore.errorStack = pipelineStore.pipelineStatus.error_traceback ?? "";
     }
 }
 
 
 function checkRequiredFields() {
     const allParams = [...pipelineStore.globalParams, ...pipelineStore.methodSpecificParams];
-    const fileFields = ['input_file_path', 'methylation_path', 'miRNA_path'];
-    
+    const fileFields = ['input_file_path', 'methylation_file_path', 'miRNA_file_path'];
+
     const emptyRequiredFields = allParams.filter(field => {
         if (field.required && !fileFields.includes(field.name)) {
             if (field.type === 'bool') {
@@ -116,9 +116,9 @@ function checkRequiredFields() {
             }
         }
         return false;
-    });    
+    });
 
-    if (emptyRequiredFields.length > 0) {        
+    if (emptyRequiredFields.length > 0) {
         pipelineStore.requiredFieldsError = `${emptyRequiredFields.length} required parameter(s) from Step 3 cannot be empty when submitting the form.`;
         return false;
     }
@@ -143,7 +143,7 @@ watch(() => pipelineStore.selectedMethod, (newMethod) => {
         const inputLabelField = pipelineStore.globalParams.find(param => param.name === 'input_label');
         if (!pipelineStore.formState.hasOwnProperty('input_label') ||
             (Array.isArray(pipelineStore.formState.input_label) && pipelineStore.formState.input_label[0] === "null")) {
-                pipelineStore.formState.input_label = inputLabelField?.default || [];
+            pipelineStore.formState.input_label = inputLabelField?.default || [];
         }
     }
 });
