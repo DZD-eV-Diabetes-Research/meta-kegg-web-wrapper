@@ -30,6 +30,7 @@ async function startPipeline() {
     pipelineStore.requiredFieldsError = ""
     pipelineStore.errorMessage = ""
     pipelineStore.errorStack = ""
+    pipelineStore.pipelineStatus.state = 'pending'
     
 
     if (pipelineStore.uploadCheck) {
@@ -118,7 +119,7 @@ function checkRequiredFields() {
     });    
 
     if (emptyRequiredFields.length > 0) {        
-        pipelineStore.requiredFieldsError = `${emptyRequiredFields.length} required field(s) cannot be empty when submitting the form.`;
+        pipelineStore.requiredFieldsError = `${emptyRequiredFields.length} required parameter(s) from Step 3 cannot be empty when submitting the form.`;
         return false;
     }
 

@@ -1,6 +1,6 @@
 <template>
     <div class="step-box">
-        <h1 class="text-3xl">Step 3: (Optional) Pipeline Parameters</h1>
+        <h1 class="text-3xl">Step 3: Pipeline Parameters</h1>
     </div>
     <div style="text-align: left">
         <UAccordion v-if="hasVisibleParams" :items="accordionItems">
