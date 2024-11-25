@@ -322,7 +322,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="Check the status of a triggered pipeline run.",
         tags=["Pipeline"],
     )
-    @limiter.limit(f"2/second")
+    @limiter.limit(f"6/second")
     async def get_pipeline_run_status(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
