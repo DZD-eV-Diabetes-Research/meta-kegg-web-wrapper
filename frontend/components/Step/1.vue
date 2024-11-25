@@ -13,7 +13,15 @@
 import type { PipelineAnalysesMethod, PipelineParams, PipelineStatus, FormState } from '~/types'
 
 const pipelineStore = usePipelineStore()
-const runtimeConfig = useRuntimeConfig();
+const runtimeConfig = useRuntimeConfig()
+
+const visibleGlobalParams = computed(() =>
+    pipelineStore.globalParams?.filter(f => f != null && f.type !== 'file') || []
+)
+const visibleMethodSpecificParams = computed(() =>
+    pipelineStore.methodSpecificParams?.filter(f => f != null && f.type !== 'file') || []
+)
+
 const { data: analysisMethods, status: analysisStatus } = await useFetch<PipelineAnalysesMethod[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
 
 async function getStatus() {
@@ -68,20 +76,15 @@ async function fetchStatusAndInitialize() {
 
 onMounted(async () => {
     await fetchStatusAndInitialize();
+    if (pipelineStore.selectedMethod) {
+        await updateFormForMethod(pipelineStore.selectedMethod);
+    }
 });
 
 onMounted(() => {
     if (pipelineStore.parameters) {
         pipelineStore.globalParams = pipelineStore.parameters.global_params || [];
         pipelineStore.methodSpecificParams = pipelineStore.parameters.method_specific_params || [];
-        fetchStatusAndInitialize();
-    }
-});
-
-onMounted(async () => {
-    await fetchStatusAndInitialize();
-    if (pipelineStore.selectedMethod) {
-        await updateFormForMethod(pipelineStore.selectedMethod);
     }
 });
 
