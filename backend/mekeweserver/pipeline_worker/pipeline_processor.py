@@ -97,31 +97,21 @@ class MetakeggPipelineProcessor:
                 if len(params[param_doc.name]) == 1:
                     params[param_doc.name] = params[param_doc.name][0]
             elif param_doc.type != "file":
-                print("# param_doc", param_doc)
-                print(
-                    "## self.pipeline_definition.pipeline_params.global_params",
-                    self.pipeline_definition.pipeline_params.global_params,
-                )
 
                 if (
-                    param_doc.name
-                    in self.pipeline_definition.pipeline_params.global_params
-                    and self.pipeline_definition.pipeline_params.global_params[
-                        param_doc.name
-                    ]
+                    hasattr(
+                        self.pipeline_definition.pipeline_params.global_params,
+                        param_doc.name,
+                    )
+                    and getattr(
+                        self.pipeline_definition.pipeline_params.global_params,
+                        param_doc.name,
+                    )
                     != ""
                 ):
-                    if param_doc.name == "sheet_name_genes":
-                        print(
-                            "## sheet_name_genes",
-                            self.pipeline_definition.pipeline_params.global_params[
-                                param_doc.name
-                            ],
-                        )
-                    params[param_doc.name] = (
-                        self.pipeline_definition.pipeline_params.global_params[
-                            param_doc.name
-                        ]
+                    params[param_doc.name] = getattr(
+                        self.pipeline_definition.pipeline_params.global_params,
+                        param_doc.name,
                     )
         # input_file_path HOTFIX! for imprecise metakegg api
         # FIND A BETTER SOLUTION
@@ -207,7 +197,6 @@ class MetakeggPipelineProcessor:
                 global_params_dict["input_file_path"] = global_params_dict[
                     "input_file_path"
                 ][0]
-            print("###global_params_dict", global_params_dict)
             self.pipeline = PipelineAsync(
                 output_folder_name=str(
                     self.pipeline_definition.get_output_files_dir().resolve()

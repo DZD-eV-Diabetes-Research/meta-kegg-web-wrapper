@@ -161,7 +161,6 @@ def get_api_router(app: FastAPI) -> APIRouter:
         ] = None,
         # pipeline_params: Annotated[MetaKeggPipelineInputParamsDocs, Query()] = None,
     ) -> MetaKeggPipelineTicket:
-        print("pipeline_params", pipeline_params)
         if pipeline_params is None:
             pipeline_params = MetaKeggPipelineInputParamsValuesAllOptional(
                 global_params={}, method_specific_params={}
@@ -379,7 +378,6 @@ def get_api_router(app: FastAPI) -> APIRouter:
             raise pipelinerun_not_finished_exception
         elif status.state == "expired":
             raise pipelinerun_expired_exception
-        print("pipeline_output_zip_file_name", status.pipeline_output_zip_file_name)
         return FileResponse(
             status.get_output_zip_file_path(),
             filename=status.get_output_zip_file_path().name,
