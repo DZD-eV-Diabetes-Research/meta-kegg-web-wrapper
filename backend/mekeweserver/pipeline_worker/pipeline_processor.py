@@ -99,6 +99,10 @@ class MetakeggPipelineProcessor:
                 if (
                     param_doc.name
                     in self.pipeline_definition.pipeline_params.global_params
+                    and self.pipeline_definition.pipeline_params.global_params[
+                        param_doc.name
+                    ]
+                    != ""
                 ):
                     params[param_doc.name] = (
                         self.pipeline_definition.pipeline_params.global_params[
@@ -147,6 +151,10 @@ class MetakeggPipelineProcessor:
                 if (
                     param_doc.name
                     in self.pipeline_definition.pipeline_params.method_specific_params
+                    and self.pipeline_definition.pipeline_params.method_specific_params[
+                        param_doc.name
+                    ]
+                    != ""
                 ):
                     params[param_doc.name] = (
                         self.pipeline_definition.pipeline_params.method_specific_params[

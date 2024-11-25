@@ -192,7 +192,7 @@ class MetaKeggPipelineInputParamsDesc(Enum):
     log2fc_column = "Column name for log2fc values in the sheet_name_genes"
     count_threshold = "Minimum number of genes per pathway, for pathway to be drawn."
     pathway_pvalue = "Raw p-value threshold for the pathways"
-    input_label = "TODO: @Michail: Is this really a global param or only used for 'multiple_inputs'? (see https://github.com/dife-bioinformatics/metaKEGG/blob/master/src/metaKEGG/modules/pipeline_async.py#L196) Input label or list of labels for multiple inputs"
+    input_label = "Input label or list of labels for multiple inputs"
     folder_extension = "Folder extension to be appended to the default naming scheme. If None and default folder exists, will overwrite folder"
     methylation_path = "Path to methylation data (Excel , CSV or TSV format)"
     methylation_pvalue = "Column name for methylation p-value"
@@ -216,11 +216,12 @@ metaKegg_param_exclude = ["folder_extension", "output_folder_name"]
 
 class MetaKeggPipelineInputParamsDocsTypeOverride(Enum):
     input_file_path = List[Path]
-    input_label = List[str]
+    # input_label = List[str] # was adapted upstream in the metakegg api. no override needed anymore
 
 
 class MetaKeggPipelineInputParamsDefaultValOverrideFactory(Enum):
-    input_label = partial(list)
+    # input_label = partial(list) # was adapted upstream in the metakegg api. no override needed anymore
+    pass
 
 
 param_types_map = {"int": int, "bool": bool, "float": float, "str": str, "file": Path}

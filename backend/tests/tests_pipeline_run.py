@@ -67,19 +67,21 @@ def test_metadata_endpoints():
 
 
 def test_single_input_gene_pipeline_run():
-
     res = req(
         "/api/pipeline",
         method="post",
-        q={
-            "sheet_name_paths": "pathways",
-            "sheet_name_genes": "gene_metrics",
-            "input_label": "input",
-            "save_to_eps": "True",
-            "count_threshold": 3,
-            "benjamini_threshold": None,
+        b={
+            "global_params": {
+                "sheet_name_paths": "pathways",
+                "sheet_name_genes": "gene_metrics",
+                "input_label": "input",
+                "save_to_eps": "True",
+                "count_threshold": 3,
+            },
+            "method_specific_params": {"benjamini_threshold": 0.01},
         },
     )
+
     dict_must_contain(
         res,
         required_keys=["id"],

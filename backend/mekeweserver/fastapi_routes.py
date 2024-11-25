@@ -161,6 +161,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         ] = None,
         # pipeline_params: Annotated[MetaKeggPipelineInputParamsDocs, Query()] = None,
     ) -> MetaKeggPipelineTicket:
+        print("pipeline_params", pipeline_params)
         if pipeline_params is None:
             pipeline_params = MetaKeggPipelineInputParamsValuesAllOptional(
                 global_params={}, method_specific_params={}
