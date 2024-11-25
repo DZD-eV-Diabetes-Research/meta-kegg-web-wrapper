@@ -74,6 +74,7 @@ class MetakeggPipelineProcessor:
     def _gather_global_params(self) -> GlobalParamModel:
         params = {}
         for param_doc in get_param_docs(PipelineAsync.__init__):
+
             if (
                 param_doc.type == "file"
                 and param_doc.name in self.pipeline_definition.pipeline_input_file_names
@@ -96,6 +97,12 @@ class MetakeggPipelineProcessor:
                 if len(params[param_doc.name]) == 1:
                     params[param_doc.name] = params[param_doc.name][0]
             elif param_doc.type != "file":
+                print("# param_doc", param_doc)
+                print(
+                    "## self.pipeline_definition.pipeline_params.global_params",
+                    self.pipeline_definition.pipeline_params.global_params,
+                )
+
                 if (
                     param_doc.name
                     in self.pipeline_definition.pipeline_params.global_params
@@ -104,6 +111,13 @@ class MetakeggPipelineProcessor:
                     ]
                     != ""
                 ):
+                    if param_doc.name == "sheet_name_genes":
+                        print(
+                            "## sheet_name_genes",
+                            self.pipeline_definition.pipeline_params.global_params[
+                                param_doc.name
+                            ],
+                        )
                     params[param_doc.name] = (
                         self.pipeline_definition.pipeline_params.global_params[
                             param_doc.name
@@ -193,7 +207,7 @@ class MetakeggPipelineProcessor:
                 global_params_dict["input_file_path"] = global_params_dict[
                     "input_file_path"
                 ][0]
-
+            print("###global_params_dict", global_params_dict)
             self.pipeline = PipelineAsync(
                 output_folder_name=str(
                     self.pipeline_definition.get_output_files_dir().resolve()
