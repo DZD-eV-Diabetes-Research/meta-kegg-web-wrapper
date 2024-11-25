@@ -27,12 +27,11 @@ async function getParams() {
 
 async function updateFormForMethod(method: string) {
     try {
-        const data  = await $fetch<PipelineParams>(`${runtimeConfig.public.baseURL}/api/${method}/params`);
+        const data = await $fetch<PipelineParams>(`${runtimeConfig.public.baseURL}/api/${method}/params`);
 
         if (data) {
             pipelineStore.globalParams = data.global_params || [];
             pipelineStore.methodSpecificParams = data.method_specific_params || [];
-            initializeFormState();
         }
     } catch (error) {
         console.error('Error fetching parameters for method:', error);
@@ -40,46 +39,47 @@ async function updateFormForMethod(method: string) {
 }
 
 function initializeFormState() {
-    pipelineStore.formState = {} as FormState;
+    pipelineStore.formState = {};
 
     if (pipelineStore.pipelineStatus?.pipeline_params) {
-        Object.entries(pipelineStore.pipelineStatus.pipeline_params).forEach(([key, value]) => {
-            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || Array.isArray(value) || value === null) {
-                pipelineStore.formState[key] = value;
-            } else {
-                // console.warn(`Unexpected type for HEY HEY ${key}:`, value);
-            }
-        });
+        const { global_params, method_specific_params } = pipelineStore.pipelineStatus.pipeline_params;
+        Object.assign(pipelineStore.formState, global_params, method_specific_params);
     }
 
-    const globalParams = pipelineStore.globalParams || [];
-    const methodSpecificParams = pipelineStore.methodSpecificParams || [];
-    const allParams = [...globalParams, ...methodSpecificParams];
+    const allParams = [...visibleGlobalParams.value, ...visibleMethodSpecificParams.value];
 
     allParams.forEach(field => {
-        if (typeof field === 'object' && field !== null && 'name' in field) {
-            if (field.name === 'input_label' && pipelineStore.selectedMethod !== '_inputs') {
+        if (!(field.name in pipelineStore.formState)) {
+            if (field.name === 'input_label' && pipelineStore.selectedMethod !== 'multiple_inputs') {
                 pipelineStore.formState[field.name] = ["null"];
-            } else if ('is_list' in field && field.is_list) {
+            } else if (field.is_list) {
                 pipelineStore.formState[field.name] = Array.isArray(field.default) ? field.default : [];
             } else {
                 pipelineStore.formState[field.name] = field.default !== undefined ? field.default : null;
             }
-        } else {
-            console.warn('Invalid field object:', field);
         }
     });
 }
+
+async function fetchStatusAndInitialize() {
+    await getStatus();
+    initializeFormState();
+}
+
+onMounted(async () => {
+    await fetchStatusAndInitialize();
+});
 
 onMounted(() => {
     if (pipelineStore.parameters) {
         pipelineStore.globalParams = pipelineStore.parameters.global_params || [];
         pipelineStore.methodSpecificParams = pipelineStore.parameters.method_specific_params || [];
-        initializeFormState();
+        fetchStatusAndInitialize();
     }
 });
 
 onMounted(async () => {
+    await fetchStatusAndInitialize();
     if (pipelineStore.selectedMethod) {
         await updateFormForMethod(pipelineStore.selectedMethod);
     }
@@ -97,7 +97,7 @@ watch(() => pipelineStore.pipelineStatus?.pipeline_params, (newParams) => {
             if (Array.isArray(value)) {
                 pipelineStore.formState[key] = value.join(', ');
             } else if (value && typeof value === 'object') {
-                pipelineStore.formState[key] = JSON.stringify(value); 
+                pipelineStore.formState[key] = JSON.stringify(value);
             } else if (typeof value === 'string' || typeof value === 'number') {
                 pipelineStore.formState[key] = value;
             } else {

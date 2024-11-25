@@ -11,7 +11,21 @@
                         <div v-for="field in visibleGlobalParams" :key="field.name">
                             <UFormGroup
                                 v-if="field.name !== 'input_label' || pipelineStore.selectedMethod === 'multiple_inputs'"
-                                :label="formatLabel(field.name)" :required="field.required">
+                                :label="formatLabel(field.name)" :required="field.required"  :ui="{label: {required : ''}}">
+                                <template #label>
+                                    <div class="flex items-center gap-2">
+                                        {{ formatLabel(field.name) }}
+                                        <span v-if="field.required" class="text-red-500">*</span>
+                                        <UPopover v-if="field.description" mode="hover" :popper="{ placement: 'left' }">
+                                            <UIcon name="i-heroicons-question-mark-circle" class="w-4 h-4" />
+                                            <template #panel>
+                                                <div class="p-4" style="text-align: left;">
+                                                    {{ formatLabel(field.description) }}
+                                                </div>
+                                            </template>
+                                        </UPopover>
+                                    </div>
+                                </template>
                                 <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
                                     v-model="pipelineStore.formState[field.name]"
                                     :placeholder="field.default?.toString() || ''" :type="getInputType(field.type)"
@@ -36,7 +50,21 @@
                         <div v-for="field in visibleMethodSpecificParams" :key="field.name">
                             <UFormGroup
                                 v-if="field.name !== 'input_label' || pipelineStore.selectedMethod === 'multiple_inputs'"
-                                :label="formatLabel(field.name)" :required="field.required">
+                                :label="formatLabel(field.name)" :required="field.required" :ui="{label: {required : ''}}">
+                                <template #label>
+                                    <div class="flex items-center gap-2">
+                                        {{ formatLabel(field.name) }}
+                                        <span v-if="field.required" class="text-red-500">*</span>
+                                        <UPopover v-if="field.description" mode="hover" :popper="{ placement: 'right' }">
+                                            <UIcon name="i-heroicons-question-mark-circle" class="w-4 h-4" />
+                                            <template #panel>
+                                                <div class="p-4" style="text-align: left;">
+                                                    {{ formatLabel(field.description) }}
+                                                </div>
+                                            </template>
+                                        </UPopover>
+                                    </div>
+                                </template>
                                 <UInput v-if="['str', 'int', 'float'].includes(field.type) && !field.is_list"
                                     v-model="pipelineStore.formState[field.name]"
                                     :placeholder="field.default?.toString() || ''" :type="getInputType(field.type)"
@@ -64,6 +92,7 @@
         </UAccordion>
     </div>
 </template>
+
 
 <script setup lang="ts">
 

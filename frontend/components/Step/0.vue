@@ -27,7 +27,7 @@
     </div>
     <UModal v-model="showDeleteModal">
         <div class="p-4" style="text-align: center;">
-            <p class="text-2xl" style="margin: 2%;" >Do you want to delete this pipeline run?</p>
+            <p class="text-2xl" style="margin: 2%;">Do you want to delete this pipeline run?</p>
             <UButton color="red" @click="confirmDelete">Delete</UButton>
         </div>
     </UModal>
@@ -92,9 +92,12 @@ const copyToClipboard = async () => {
 
 async function confirmDelete() {
     showDeleteModal.value = false
-    await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}`, {
+    try {
+        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}`, {
             method: 'DELETE',
         })
+    } catch (error) {
+    }
     await navigateTo('/')
 }
 
