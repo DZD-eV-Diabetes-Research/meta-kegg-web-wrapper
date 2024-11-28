@@ -163,6 +163,19 @@ class MetaKeggPipelineStateManager:
         upload_file_path.unlink(missing_ok=True)
         return self.get_pipeline_run_definition(ticket_id=ticket_id)
 
+    def set_pipeline_method(
+        self, ticket_id: uuid.UUID, analysis_method_name: str
+    ) -> MetaKeggPipelineDef:
+        log.info(f"Add pipeline-run with id '{ticket_id}' to queue.")
+        pipeline_status = self.get_pipeline_run_definition(ticket_id)
+        pipeline_status.pipeline_analyses_method = next(
+            e.value
+            for e in MetaKeggPipelineAnalysisMethodDocs
+            if e.name == analysis_method_name
+        )
+        self.set_pipeline_run_definition(pipeline_status)
+        return pipeline_status
+
     def set_pipeline_run_as_queud(
         self, ticket_id: uuid.UUID, analysis_method_name: str
     ) -> MetaKeggPipelineDef:
@@ -180,11 +193,6 @@ class MetaKeggPipelineStateManager:
         # ...reset done
 
         pipeline_status.state = "queued"
-        pipeline_status.pipeline_analyses_method = next(
-            e.value
-            for e in MetaKeggPipelineAnalysisMethodDocs
-            if e.name == analysis_method_name
-        )
         queue_length = self.redis_client.llen(self.REDIS_NAME_PIPELINE_QUEUE)
 
         self.set_pipeline_run_definition(pipeline_status)

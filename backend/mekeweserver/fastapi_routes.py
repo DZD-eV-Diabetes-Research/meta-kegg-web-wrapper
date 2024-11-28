@@ -293,10 +293,28 @@ def get_api_router(app: FastAPI) -> APIRouter:
     analysis_method_names_type_hint = Literal[
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])
     ]
-
+##ENDPOINT: /pipeline/{pipeline_ticket_id}/run/{analysis_method_name}
+    @mekewe_router.patch(
+        "/pipeline/{pipeline_ticket_id}/set/{analysis_method_name}",
+        response_model=MetaKeggPipelineDef,
+        responses=http_exception_to_resp_desc(pipelinerun_not_found_exception),
+        description="Qeueu the pipeline-run. If the queue is passed the pipeline will change from 'queued' into 'running' state.",
+        tags=["Pipeline"],
+    )
+    @limiter.limit(f"1/second")
+    async def start_pipeline_run(
+        request: Request,
+        pipeline_ticket_id: uuid.UUID,
+        analysis_method_name: analysis_method_names_type_hint,
+    ) -> MetaKeggPipelineDef:
+        return MetaKeggPipelineStateManager(
+            redis_client=redis
+        ).set_pipeline_run_as_queud(
+            pipeline_ticket_id, analysis_method_name=analysis_method_name
+            
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/run/{analysis_method_name}
     @mekewe_router.post(
-        "/pipeline/{pipeline_ticket_id}/run/{analysis_method_name}",
+        "/pipeline/{pipeline_ticket_id}/run",
         response_model=MetaKeggPipelineDef,
         responses=http_exception_to_resp_desc(pipelinerun_not_found_exception),
         description="Qeueu the pipeline-run. If the queue is passed the pipeline will change from 'queued' into 'running' state.",
