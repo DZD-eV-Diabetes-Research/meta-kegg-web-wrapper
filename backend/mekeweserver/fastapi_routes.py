@@ -303,7 +303,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         tags=["Pipeline"],
     )
     @limiter.limit(f"1/second")
-    async def start_pipeline_run(
+    async def set_pipeline_method(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
         analysis_method_name: analysis_method_names_type_hint,
