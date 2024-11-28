@@ -48,7 +48,7 @@ async function startPipeline() {
     }
 
     try {
-        pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/run/${pipelineStore.selectedMethod}`, {
+        pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/run`, {
             method: "POST"
         })
 
@@ -126,27 +126,6 @@ function checkRequiredFields() {
     pipelineStore.requiredFieldsError = '';
     return true;
 }
-
-// watch(() => pipelineStore.pipelineStatus?.pipeline_input_file_names, (newValue) => {
-//     if (newValue && newValue.length > 0) {
-//         pipelineStore.uploadCheck  = true
-//     } else {
-//         pipelineStore.uploadCheck  = false
-//     }
-// }, { deep: true, immediate: true })
-
-
-watch(() => pipelineStore.selectedMethod, (newMethod) => {
-    if (newMethod !== 'multiple_inputs') {
-        pipelineStore.formState.input_label = ["null"];
-    } else {
-        const inputLabelField = pipelineStore.globalParams.find(param => param.name === 'input_label');
-        if (!pipelineStore.formState.hasOwnProperty('input_label') ||
-            (Array.isArray(pipelineStore.formState.input_label) && pipelineStore.formState.input_label[0] === "null")) {
-            pipelineStore.formState.input_label = inputLabelField?.default || [];
-        }
-    }
-});
 
 </script>
 

@@ -37,6 +37,8 @@ async function updateFormForMethod(method: string) {
     try {
         const data = await $fetch<PipelineParams>(`${runtimeConfig.public.baseURL}/api/${method}/params`);
 
+        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/set/${method}`, { method: "PATCH" });
+
         if (data) {
             pipelineStore.globalParams = data.global_params || [];
             pipelineStore.methodSpecificParams = data.method_specific_params || [];
@@ -91,6 +93,20 @@ onMounted(() => {
 watch(() => pipelineStore.selectedMethod, async (newMethod) => {
     if (newMethod) {
         await updateFormForMethod(newMethod);
+    }
+});
+
+watch(() => pipelineStore.pipelineStatus?.pipeline_analyses_method.name, async (newMethod) => {
+    if (newMethod) {
+        pipelineStore.selectedMethod = newMethod
+    }
+});
+
+onMounted(() => {
+    if (pipelineStore.pipelineStatus?.pipeline_analyses_method.name) {
+        pipelineStore.selectedMethod = pipelineStore.pipelineStatus?.pipeline_analyses_method.name
+    } else {
+        pipelineStore.selectedMethod = "single_input_genes"
     }
 });
 
