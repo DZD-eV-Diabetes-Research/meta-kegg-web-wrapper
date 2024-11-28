@@ -293,7 +293,8 @@ def get_api_router(app: FastAPI) -> APIRouter:
     analysis_method_names_type_hint = Literal[
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])
     ]
-##ENDPOINT: /pipeline/{pipeline_ticket_id}/run/{analysis_method_name}
+
+    ##ENDPOINT: /pipeline/{pipeline_ticket_id}/run/{analysis_method_name}
     @mekewe_router.patch(
         "/pipeline/{pipeline_ticket_id}/set/{analysis_method_name}",
         response_model=MetaKeggPipelineDef,
@@ -307,11 +308,10 @@ def get_api_router(app: FastAPI) -> APIRouter:
         pipeline_ticket_id: uuid.UUID,
         analysis_method_name: analysis_method_names_type_hint,
     ) -> MetaKeggPipelineDef:
-        return MetaKeggPipelineStateManager(
-            redis_client=redis
-        ).set_pipeline_run_as_queud(
+        return MetaKeggPipelineStateManager(redis_client=redis).set_pipeline_method(
             pipeline_ticket_id, analysis_method_name=analysis_method_name
-            
+        )
+
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/run/{analysis_method_name}
     @mekewe_router.post(
         "/pipeline/{pipeline_ticket_id}/run",
@@ -324,12 +324,11 @@ def get_api_router(app: FastAPI) -> APIRouter:
     async def start_pipeline_run(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
-        analysis_method_name: analysis_method_names_type_hint,
     ) -> MetaKeggPipelineDef:
         return MetaKeggPipelineStateManager(
             redis_client=redis
         ).set_pipeline_run_as_queud(
-            pipeline_ticket_id, analysis_method_name=analysis_method_name
+            pipeline_ticket_id,
         )
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/status

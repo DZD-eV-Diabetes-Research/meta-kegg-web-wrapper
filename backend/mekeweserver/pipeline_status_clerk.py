@@ -176,9 +176,7 @@ class MetaKeggPipelineStateManager:
         self.set_pipeline_run_definition(pipeline_status)
         return pipeline_status
 
-    def set_pipeline_run_as_queud(
-        self, ticket_id: uuid.UUID, analysis_method_name: str
-    ) -> MetaKeggPipelineDef:
+    def set_pipeline_run_as_queud(self, ticket_id: uuid.UUID) -> MetaKeggPipelineDef:
         log.info(f"Add pipeline-run with id '{ticket_id}' to queue.")
         pipeline_status = self.get_pipeline_run_definition(ticket_id)
 
