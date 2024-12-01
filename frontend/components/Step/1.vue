@@ -96,14 +96,14 @@ watch(() => pipelineStore.selectedMethod, async (newMethod) => {
     }
 });
 
-watch(() => pipelineStore.pipelineStatus?.pipeline_analyses_method.name, async (newMethod) => {
+watch(() => pipelineStore.pipelineStatus?.pipeline_analyses_method?.name, async (newMethod) => {
     if (newMethod) {
         pipelineStore.selectedMethod = newMethod
     }
 });
 
 onMounted(() => {
-    if (pipelineStore.pipelineStatus?.pipeline_analyses_method.name) {
+    if (pipelineStore.pipelineStatus?.pipeline_analyses_method?.name) {
         pipelineStore.selectedMethod = pipelineStore.pipelineStatus?.pipeline_analyses_method.name
     } else {
         pipelineStore.selectedMethod = "single_input_genes"
