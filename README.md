@@ -37,9 +37,6 @@ Web interface for https://github.com/dife-bioinformatics/metaKEGG
 
 ##  Option1: Run with prebuild container
 
-> [!WARNING]  
-> Work in Process: This needs [MetaKegg](https://github.com/dife-bioinformatics/metaKEGG) to be public. There is no public pre-build container yet.
-
 
 ### Download
 
@@ -56,9 +53,6 @@ visit http://localhost:8282 to use the MetaKegg WebClient
 visit http://localhost:8282/docs to see the OpenAPI Rest Specification
 
 ##  Option2: Build and run with Docker
-
-> [!WARNING]  
-> Work in Process: This needs [MetaKegg](https://github.com/dife-bioinformatics/metaKEGG) to be public. Otherwise its not downloadable and installable by the Docker build process.
 
 **requirements**
 
@@ -86,7 +80,6 @@ visit http://localhost:8282/docs to see the OpenAPI Rest Specification
 visit http://localhost:8282 to use the MetaKegg WebClient
 
 visit http://localhost:8282/docs to see the OpenAPI Rest Specification
-
 
 
 ##  Option3: Build and run locally
