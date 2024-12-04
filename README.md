@@ -2,7 +2,7 @@
 
 Web interface for https://github.com/dife-bioinformatics/metaKEGG
 
-Authors: JTaeger [DZD], [Tim Bleimehl](https://orcid.org/0000-0002-2060-3920) [DZD]
+Authors: [Justus Täger](https://orcid.org/0000-0002-3916-7815) [DZD](https://ror.org/04qq88z54), [Tim Bleimehl](https://orcid.org/0000-0002-2060-3920) [DZD](https://ror.org/04qq88z54)
 
 ![metakeggweb_screenshot](metakeggweb_screenshot.png)
 
