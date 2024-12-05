@@ -11,15 +11,47 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+
 # from fastapi.security import
 
 import mekeweserver
 from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
-
+from mekeweserver.utils import bytes_humanreadable
 
 log = get_logger()
 config: Config = get_config()
+
+
+class FileSizeLimiterMiddleware(BaseHTTPMiddleware):
+
+    def __init__(self, app: FastAPI, max_size_bytes: int):
+        super().__init__(app)
+        self.max_size_bytes = max_size_bytes
+
+    async def dispatch(self, request: Request, call_next):
+        # Check Content-Length header (if present)
+        content_length = request.headers.get("Content-Length")
+        if content_length and int(content_length) > self.max_size_bytes:
+            return Response(
+                f"Uploaded file is too large. Max limit is {bytes_humanreadable(self.max_size_bytes)}",
+                status_code=413,
+            )
+
+        # Alternatively, check the actual body size
+        body = await request.body()
+        if len(body) > self.max_size_bytes:
+            return Response(
+                f"Uploaded file is too large. Max limit is {bytes_humanreadable(self.max_size_bytes)}",
+                status_code=413,
+            )
+
+        return await call_next(request)
 
 
 def _add_api_middleware(app: FastAPI):
@@ -29,6 +61,9 @@ def _add_api_middleware(app: FastAPI):
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
+    )
+    app.add_middleware(
+        FileSizeLimiterMiddleware, config.MAX_FILE_SIZE_UPLOAD_LIMIT_BYTES
     )
     # app.add_middleware(
     #    SessionMiddleware,

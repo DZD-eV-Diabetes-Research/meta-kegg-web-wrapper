@@ -115,6 +115,8 @@ class Config(BaseSettings):
         default=True,
         description="Only allows a certain amount of API requests. Helps mitigating filling the pipeline queue with garbage and DDOS attacks.",
     )
+    MAX_FILE_SIZE_UPLOAD_LIMIT_BYTES: Optional[int] = Field(default=None)
+    MAX_CACHE_SIZE_BYTES: Optional[int] = Field(default=None)
     MAX_PIPELINE_RUNS_PER_HOUR_PER_IP: int = Field(
         default=5,
         description="Rate limiting parameter. How many pipeline runs can be started from one IP.",
