@@ -52,12 +52,6 @@ pipelineStore.pipelineStatus = pipelineStatus.value
 
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 
-const { data: config } = await useFetch<Config>(`${runtimeConfig.public.baseURL}/config`)
-configStore.config = config.value
-
-const { data: infoLinks } = await useFetch<InfoLinks[]>(`${runtimeConfig.public.baseURL}/info-links`)
-configStore.infoLinks = infoLinks.value
-
 const { data: parameters } = await useFetch<PipelineParams>(`${runtimeConfig.public.baseURL}/api/${pipelineStore.selectedMethod}/params`)
 pipelineStore.parameters = parameters.value
 
