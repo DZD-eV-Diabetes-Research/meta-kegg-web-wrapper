@@ -66,10 +66,18 @@ class Config(BaseSettings):
         default=None,
         description="The protocol detection can fail in certain reverse proxy situations. This option allows you to manually override the automatic detection",
     )
-    SERVER_ALLOWED_ORIGINS :List[str]Field(
+    SERVER_ALLOWED_ORIGINS: List[str] = Field(
         default_factory=list,
         description="Additional http allowed origins values.",
     )
+
+    def get_allowed_origins(self) -> List[str]:
+        allowed_origins = self.SERVER_ALLOWED_ORIGINS
+        allowed_origins.extend(
+            [self.CLIENT_URL, str(self.get_server_url()).rstrip("/")]
+        )
+        return allowed_origins
+
     PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER: int = Field(
         default=240,
         description="If a MetaKegg pipeline run is initialized but not started, it will be considered as abandoned after this time and be deleted.",
@@ -82,7 +90,6 @@ class Config(BaseSettings):
         default=1440,
         description="If a MetaKegg pipeline has finished and is expired, all its metadata will be wiped after this amounts of minutes after expiring. If a user tries to revisit it, there will be a 404 error.",
     )
-
 
     CLIENT_CONTACT_EMAIL: Optional[str] = Field(
         default=None,

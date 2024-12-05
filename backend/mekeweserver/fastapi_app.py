@@ -23,13 +23,9 @@ config: Config = get_config()
 
 
 def _add_api_middleware(app: FastAPI):
-    allowed_origins = config.SERVER_ALLOWED_ORIGINS
-    allowed_origins.extend(
-        [config.CLIENT_URL, str(config.get_server_url()).rstrip("/")]
-    )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins,
+        allow_origins=config.get_allowed_origins(),
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
