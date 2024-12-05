@@ -42,8 +42,8 @@ const { data: ticket_id, error: ticketError } = await useFetch<Ticket_ID>(`${run
     
 })
 
-// if (ticket_id.value && healthStatus.value?.healthy) {
-//     await navigateTo(`/${ticket_id.value.id}`)
-// }
+if (ticket_id.value && healthStatus.value?.healthy) {
+    await navigateTo(`/${ticket_id.value.id}`)
+}
 
 </script>
