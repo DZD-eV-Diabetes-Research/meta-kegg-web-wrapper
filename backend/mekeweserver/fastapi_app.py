@@ -35,6 +35,7 @@ class FileSizeLimiterMiddleware(BaseHTTPMiddleware):
         self.max_size_bytes = max_size_bytes
 
     async def dispatch(self, request: Request, call_next):
+
         # Check Content-Length header (if present)
         content_length = request.headers.get("Content-Length")
         if content_length and int(content_length) > self.max_size_bytes:

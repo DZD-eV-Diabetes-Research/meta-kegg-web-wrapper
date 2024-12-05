@@ -19,6 +19,7 @@ from mekeweserver.model import (
 from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
 from mekeweserver.model import find_parameter_docs_by_name
+from mekeweserver.utils import get_directory_size_bytes, bytes_humanreadable
 
 config: Config = get_config()
 log = get_logger()
@@ -131,6 +132,15 @@ class MetaKeggPipelineStateManager:
         with open(internal_file_path, "wb") as target_file:
             target_file.write(upload_file_object.file.read())
 
+        if config.MAX_CACHE_SIZE_BYTES:
+            cache_size = self.get_cache_usage_size_bytes()
+            if cache_size > config.MAX_CACHE_SIZE_BYTES:
+                internal_file_path.unlink()
+                raise ValueError("Out of storage. Try again later.")
+            else:
+                log.info(
+                    f"Save file to '{internal_file_path}'. Storage usage {cache_size}/{config.MAX_CACHE_SIZE_BYTES} ({bytes_humanreadable(cache_size)}/{bytes_humanreadable(config.MAX_CACHE_SIZE_BYTES)})"
+                )
         # check if its a re-upload and we just overwrote the file...
         if clean_file_name not in pipeline_status.pipeline_input_file_names[param_name]:
             # ... otherwise we just append it as a new file
@@ -344,4 +354,4 @@ class MetaKeggPipelineStateManager:
         return False
 
     def get_cache_usage_size_bytes(self) -> int:
-        pass
+        return get_directory_size_bytes(Path(config.PIPELINE_RUNS_CACHE_DIR))

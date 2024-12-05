@@ -34,8 +34,7 @@ from mekeweserver.config import Config, get_config
 from mekeweserver.db import get_redis_client
 from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 
-config: Config = get_config()
-
+from mekeweserver.utils import get_directory_size_bytes
 from metaKEGG import PipelineAsync
 from mekeweserver.model import (
     MetaKeggPipelineInputParamsDocs,
@@ -58,6 +57,8 @@ from mekeweserver.model import (
     GlobalParamModelOptional,
     MetaKeggPipelineDefStates,
 )
+
+config: Config = get_config()
 
 
 def http_exception_to_resp_desc(
@@ -117,7 +118,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="List all MetaKEGG analysis methods available. The name will be used to start a analysis pipeline run in endpoint `/pipeline/{pipeline_ticket_id}/run/...`",
         tags=["Analysis Methods"],
     )
-    @limiter.limit(f"6/second")
+    @limiter.limit(f"20/second")
     async def list_available_analysis_methods(
         request: Request,
     ):
@@ -130,7 +131,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="List all MetaKEGG parameters per analysis methods available. ",
         tags=["Analysis Methods"],
     )
-    @limiter.limit(f"6/second")
+    @limiter.limit(f"20/second")
     async def list_available_analysis_parameters(
         request: Request, analysis_method_name: Literal[tuple(analyses_method_names)]
     ) -> MetaKeggPipelineInputParamsDocs:
@@ -178,7 +179,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         Delete an existing pipeline definiton with all input and output files.""",
         tags=["Pipeline"],
     )
-    @limiter.limit(f"10/minute")
+    @limiter.limit(f"30/minute")
     async def delete_a_metakegg_pipeline_run_definition(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
@@ -206,7 +207,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         For setting `file`-based parameters use the endpoint `/api/pipeline/{pipeline_ticket_id}/upload`""",
         tags=["Pipeline"],
     )
-    @limiter.limit(f"10/minute")
+    @limiter.limit(f"30/minute")
     async def update_metakegg_pipeline_non_file_parameters(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
@@ -251,16 +252,32 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="Add a file to an non started/queued pipeline-run definition",
         tags=["Pipeline"],
     )
-    @limiter.limit(f"5/minute")
+    @limiter.limit(f"30/minute")
     async def attach_file_to_meta_kegg_pipeline_run_definition(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
         param_name: str,
         file: UploadFile = File(...),
     ) -> MetaKeggPipelineDef:
-        return MetaKeggPipelineStateManager(
-            redis_client=redis
-        ).attach_pipeline_run_input_file(pipeline_ticket_id, param_name, file)
+        pipeline_manager = MetaKeggPipelineStateManager(redis_client=redis)
+        if config.MAX_CACHE_SIZE_BYTES:
+            content_length = request.headers.get("Content-Length")
+            if content_length is None:
+                raise HTTPException(
+                    status_code=status.HTTP_411_LENGTH_REQUIRED,
+                    detail="Client must provide a 'Content-Length' header.",
+                )
+            if (
+                pipeline_manager.get_cache_usage_size_bytes() + int(content_length)
+                > config.MAX_CACHE_SIZE_BYTES
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_507_INSUFFICIENT_STORAGE,
+                    detail="Out of storage space. Please try again later, when some Pipelineruns are flushed.",
+                )
+        return pipeline_manager.attach_pipeline_run_input_file(
+            pipeline_ticket_id, param_name, file
+        )
 
     analysis_method_names_type_hint = Literal[
         tuple([str(e.name) for e in MetaKeggPipelineAnalysisMethodDocs])
@@ -273,7 +290,6 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="Remove a file from an non started/queued pipeline-run definition",
         tags=["Pipeline"],
     )
-    @limiter.limit(f"5/minute")
     async def remove_file_from_meta_kegg_pipeline_run_definition(
         request: Request,
         param_name: str,
@@ -302,7 +318,7 @@ def get_api_router(app: FastAPI) -> APIRouter:
         description="Qeueu the pipeline-run. If the queue is passed the pipeline will change from 'queued' into 'running' state.",
         tags=["Pipeline"],
     )
-    @limiter.limit(f"1/second")
+    @limiter.limit(f"20/second")
     async def set_pipeline_method(
         request: Request,
         pipeline_ticket_id: uuid.UUID,
