@@ -17,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Config, InfoLinks } from '~/types'
 
 const runtimeConfig = useRuntimeConfig();
 const configStore = useConfigStore()
@@ -38,12 +39,11 @@ configStore.infoLinks = infoLinks.value
 
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 const { data: ticket_id, error: ticketError } = await useFetch<Ticket_ID>(`${runtimeConfig.public.baseURL}/api/pipeline`, {
-    method: "POST"
-    
+    method: "POST"  
 })
 
-// if (ticket_id.value && healthStatus.value?.healthy) {
-//     await navigateTo(`/${ticket_id.value.id}`)
-// }
+if (ticket_id.value && healthStatus.value?.healthy) {
+    await navigateTo(`/${ticket_id.value.id}`)
+}
 
 </script>
