@@ -57,7 +57,7 @@ class FileSizeLimiterMiddleware(BaseHTTPMiddleware):
 def _add_api_middleware(app: FastAPI):
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[config.CLIENT_URL, str(config.get_server_url()).rstrip("/")],
+        allow_origins=config.get_allowed_origins(),
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
