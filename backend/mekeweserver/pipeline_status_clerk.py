@@ -342,3 +342,6 @@ class MetaKeggPipelineStateManager:
         if abandoned_datetime < datetime.datetime.now(tz=datetime.timezone.utc):
             return True
         return False
+
+    def get_cache_usage_size_bytes(self) -> int:
+        pass
