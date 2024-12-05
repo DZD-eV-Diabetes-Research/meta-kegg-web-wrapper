@@ -17,7 +17,9 @@ classifiers = [
 ]
 
 dependencies = [
-    "metaKEGG @ git+ssh://git@github.com/dife-bioinformatics/metaKEGG.git",
+    #"metaKEGG @ git+ssh://git@github.com/dife-bioinformatics/metaKEGG.git", # workaround during non public phase
+    #"metaKEGG @ git+https://github.com/dife-bioinformatics/metaKEGG.git", # workaround during non pypi.org release phase
+    "metaKEGG",
     "six",                                                                  # six seems to be needed if metaKEGG was installed from github. investigate later
     "uvicorn",
     "fastapi",

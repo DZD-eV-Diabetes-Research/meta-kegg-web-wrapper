@@ -87,9 +87,7 @@ def run_server(env: Dict = None):
     # exit()
     print(f"LOG_LEVEL: {config.LOG_LEVEL}")
     print(f"UVICORN_LOG_LEVEL: {get_uvicorn_loglevel()}")
-    print(
-        f"allow_origins=[{config.CLIENT_URL}, {str(config.get_server_url()).rstrip('/')}]"
-    )
+    print(f"allow_origins={config.get_allowed_origins()}")
     # check if client exists if needed
     if config.CLIENT_URL == config.get_server_url():
         if (
