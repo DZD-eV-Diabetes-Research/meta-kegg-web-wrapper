@@ -7,6 +7,10 @@
         <USelect v-model="pipelineStore.selectedMethod" :options="analysisMethods ?? []" option-attribute="display_name"
             valueAttribute="name" style="margin-bottom: 1%" @change="getParams" />
     </div>
+    <div v-if="parameterError" :narrow-width="true">
+        <br>
+        <h1 class="text-3xl font-bold" style="color: red;">{{ parameterError }}</h1>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -21,6 +25,7 @@ const visibleGlobalParams = computed(() =>
 const visibleMethodSpecificParams = computed(() =>
     pipelineStore.methodSpecificParams?.filter(f => f != null && f.type !== 'file') || []
 )
+const parameterError = ref("")
 
 const { data: analysisMethods, status: analysisStatus } = await useFetch<PipelineAnalysesMethod[]>(`${runtimeConfig.public.baseURL}/api/analysis`)
 
@@ -34,6 +39,7 @@ async function getParams() {
 }
 
 async function updateFormForMethod(method: string) {
+    parameterError.value = ""
     try {
         const data = await $fetch<PipelineParams>(`${runtimeConfig.public.baseURL}/api/${method}/params`);
 
@@ -44,6 +50,7 @@ async function updateFormForMethod(method: string) {
             pipelineStore.methodSpecificParams = data.method_specific_params || [];
         }
     } catch (error) {
+        parameterError.value = error
         console.error('Error fetching parameters for method:', error);
     }
 }

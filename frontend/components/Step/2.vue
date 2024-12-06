@@ -18,7 +18,8 @@
     </div>
     <div v-if="acceptAGB" class="input-field-container">
         <UICustomInputField @input="printUploadChange" :label="inputLabel" name="input_file_path" />
-        <UICustomInputField v-for="button in fileButtons" :key="button.name" @input="printUploadChange" :name="button.name" :label="formatButtonLabel(button.name)" />
+        <UICustomInputField v-for="button in fileButtons" :key="button.name" @input="printUploadChange"
+            :name="button.name" :label="formatButtonLabel(button.name)" />
     </div>
     <div v-else style="margin-top: 1%; margin-bottom: 0.5%">
         <UButton label="Select your File" variant="outline" @click="uncheckedAGB" style="margin: 0% 1%;">
@@ -26,7 +27,8 @@
                 <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
             </template>
         </UButton>
-        <UButton v-for="button in fileButtons" :key="button.name" variant="outline" :label="formatButtonLabel(button.name)" @click="uncheckedAGB" style="margin: 0% 1%;">
+        <UButton v-for="button in fileButtons" :key="button.name" variant="outline"
+            :label="formatButtonLabel(button.name)" @click="uncheckedAGB" style="margin: 0% 1%;">
             <template #trailing>
                 <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
             </template>
@@ -45,15 +47,19 @@
         </UModal>
     </div>
     <div>
-        <p v-if="pipelineStore.pipelineStatus?.pipeline_input_file_names?.input_file_path.length > 0" class="text-lg" style="margin-top: 1%; text-align: center;">Uploaded Files</p>
+        <p v-if="pipelineStore.pipelineStatus?.pipeline_input_file_names?.input_file_path.length > 0" class="text-lg"
+            style="margin-top: 1%; text-align: center;">Uploaded Files</p>
         <div v-for="(value, key) in pipelineStore.pipelineStatus?.pipeline_input_file_names" :key="key">
             <p v-if="key === 'input_file_path' && value.length > 0"></p>
-            <p v-if="key === 'methylation_file_path' && value.length > 0" class="text-lg" style="margin-top: 1%; text-align: center;">Methylation
+            <p v-if="key === 'methylation_file_path' && value.length > 0" class="text-lg"
+                style="margin-top: 1%; text-align: center;">Methylation
                 Files</p>
-            <p v-if="key === 'miRNA_file_path' && value.length > 0" class="text-lg" style="margin-top: 1%; text-align: center;">
+            <p v-if="key === 'miRNA_file_path' && value.length > 0" class="text-lg"
+                style="margin-top: 1%; text-align: center;">
                 miRNA Files</p>
             <div style="display: flex; flex-direction: column; align-items: center;">
-                <div v-for="item in value" :key="item" style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <div v-for="item in value" :key="item"
+                    style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                     <p class="text-base" style="margin-right: 0.5rem;">{{ item }}</p>
                     <UButton variant="link" color="red" :padded="true" @click="deleteFile(item, key)">
                         <UIcon name="i-heroicons-trash" class="w-5 h-5" />
@@ -62,6 +68,15 @@
             </div>
         </div>
     </div>
+    <div v-if="fileDeleteError" :narrow-width="true">
+        <br>
+        <h1 class="text-3xl font-bold" style="color: red;">{{ fileDeleteError }}</h1>
+    </div>
+    <div v-if="fileUploadError" :narrow-width="true">
+        <br>
+        <h1 class="text-3xl font-bold" style="color: red;">{{ fileUploadError }}</h1>
+    </div>
+    {{ test }}
 </template>
 
 <script setup lang="ts">
@@ -72,6 +87,8 @@ const pipelineStore = usePipelineStore()
 const runtimeConfig = useRuntimeConfig();
 const acceptAGB = ref(false)
 const showAGBModal = ref(false)
+const fileDeleteError = ref("")
+const fileUploadError = ref("")
 
 onMounted(() => {
     const pipelineInputFileNames = pipelineStore.pipelineStatus?.pipeline_input_file_names
@@ -91,42 +108,67 @@ function uncheckedAGB() {
     alert("To upload files you must accept the AGBs")
 }
 
+const test  = ref()
+
 async function printUploadChange(event: Event, file_name: string) {
-    const input = event.target as HTMLInputElement
+    fileUploadError.value = ""
+    try {
+        const input = event.target as HTMLInputElement
 
-    if (input.files && input.files.length > 0) {
-        const formData = new FormData()
-        formData.append('file', input.files[0])
+        if (input.files && input.files.length > 0) {
+            const formData = new FormData()
+            formData.append('file', input.files[0])
 
-        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/file/upload/${file_name}`, {
-            method: 'POST',
-            body: formData,
+            console.log("Sending request...")
+
+            const response = await fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/file/upload/${file_name}`, {
+                method: 'POST',
+                body: formData,
+            })
+        
+            console.log("response is " + response.status)
+
+            if (!response.ok) {
+                console.log("here should be the response status" + response.status);
+                
+                if (response.status === 413) {
+                    fileUploadError.value = "File is too large. Please upload a smaller file."
+                }
+                fileUploadError.value = `HTTP error! status: ${response.status}`
+            }
+            input.value = ''
+        }
+        const status = await $fetch<PipelineStatus>(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
+        pipelineStore.pipelineStatus = status
+
+        nextTick(() => {
+            console.log('All files uploaded:', allFilesUploaded.value)
         })
-        input.value = ''
+    } catch (error) {
+        fileUploadError.value = error
     }
-    const status = await $fetch<PipelineStatus>(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
-    pipelineStore.pipelineStatus = status
-
-    nextTick(() => {
-        console.log('All files uploaded:', allFilesUploaded.value)
-    })
 }
 
 async function deleteFile(fileName: string, file_path: string) {
-    await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/file/remove/${file_path}/${fileName}`, {
-        method: 'DELETE',
-    })
+    fileDeleteError.value = ""
+    try {
+        await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/file/remove/${file_path}/${fileName}`, {
+            method: 'DELETE',
+        })
 
-    const fileInputs = document.querySelectorAll('input[type="file"]')
-    fileInputs.forEach(input => {
-        (input as HTMLInputElement).value = ''
-    })
+        const fileInputs = document.querySelectorAll('input[type="file"]')
+        fileInputs.forEach(input => {
+            (input as HTMLInputElement).value = ''
+        })
 
-    pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
+        pipelineStore.pipelineStatus = await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}/status`)
 
-    nextTick(() => {
-        console.log('All files uploaded:', allFilesUploaded.value)
-    })
+        nextTick(() => {
+            console.log('All files uploaded:', allFilesUploaded.value)
+        })
+    } catch (error) {
+        fileDeleteError.value = error
+    }
 }
 
 const fileButtons = computed(() =>

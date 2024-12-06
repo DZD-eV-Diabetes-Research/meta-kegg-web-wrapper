@@ -38,6 +38,7 @@ const { data: infoLinks, error: linkError } = await useFetch<InfoLinks[]>(`${run
 configStore.infoLinks = infoLinks.value
 
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
+
 const { data: ticket_id, error: ticketError } = await useFetch<Ticket_ID>(`${runtimeConfig.public.baseURL}/api/pipeline`, {
     method: "POST"  
 })

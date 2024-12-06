@@ -25,6 +25,9 @@
             <UIcon name="i-heroicons-trash" class="w-5 h-5" />
         </UButton>
     </div>
+    <UIBaseCard v-if="deletionError" :narrow-width="true">
+        <h1 class="text-3xl font-bold" style="color: red;">{{ deletionError }}</h1>
+    </UIBaseCard>
     <UModal v-model="showDeleteModal">
         <div class="p-4" style="text-align: center;">
             <p class="text-2xl" style="margin: 2%;">Do you want to delete this pipeline run?</p>
@@ -40,7 +43,6 @@
 </template>
 
 <script setup lang="ts">
-
 const configStore = useConfigStore()
 const pipelineStore = usePipelineStore()
 const url = useRequestURL()
@@ -51,6 +53,8 @@ const copyProgress = ref(0);
 const showCopyMessage = ref(false);
 const showDeleteModal = ref(false);
 const runtimeConfig = useRuntimeConfig();
+
+const deletionError = ref("")
 
 const copyToClipboard = async () => {
     const success = await copy(url.toString());
@@ -91,12 +95,18 @@ const copyToClipboard = async () => {
 };
 
 async function confirmDelete() {
+    deletionError.value = ""
     showDeleteModal.value = false
     try {
         await $fetch(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id}`, {
             method: 'DELETE',
         })
     } catch (error) {
+        if (error.detail.msg) {
+            deletionError.value = error.detail.msg
+        } else {
+            deletionError.value = "An error occured while deleting the pipelin run"
+        }
     }
     await navigateTo('/')
 }

@@ -38,10 +38,9 @@
 </template>
 
 <script setup lang="ts">
-import type { HealthStatus, PipelineParams, PipelineStatus, Config, InfoLinks } from '~/types';
+import type { HealthStatus, PipelineStatus } from '~/types';
 
 const pipelineStore = usePipelineStore()
-const configStore = useConfigStore()
 const runtimeConfig = useRuntimeConfig();
 
 const route = useRoute()
@@ -51,9 +50,6 @@ const { data: pipelineStatus, error: statusError } = await useFetch<PipelineStat
 pipelineStore.pipelineStatus = pipelineStatus.value
 
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
-
-const { data: parameters } = await useFetch<PipelineParams>(`${runtimeConfig.public.baseURL}/api/${pipelineStore.selectedMethod}/params`)
-pipelineStore.parameters = parameters.value
 
 function newID() {
     navigateTo("/")
