@@ -132,9 +132,12 @@ async function printUploadChange(event: Event, file_name: string) {
                 console.log("here should be the response status" + response.status);
                 
                 if (response.status === 413) {
+                    console.log(response);
+                    
                     fileUploadError.value = "File is too large. Please upload a smaller file."
-                }
+                } else {
                 fileUploadError.value = `HTTP error! status: ${response.status}`
+                }
             }
             input.value = ''
         }
