@@ -58,15 +58,16 @@ class FileSizeLimiterMiddleware(BaseHTTPMiddleware):
 
 
 def _add_api_middleware(app: FastAPI):
+
+    app.add_middleware(
+        FileSizeLimiterMiddleware, config.MAX_FILE_SIZE_UPLOAD_LIMIT_BYTES
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.get_allowed_origins(),
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
-    )
-    app.add_middleware(
-        FileSizeLimiterMiddleware, config.MAX_FILE_SIZE_UPLOAD_LIMIT_BYTES
     )
     # app.add_middleware(
     #    SessionMiddleware,
