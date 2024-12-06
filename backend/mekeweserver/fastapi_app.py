@@ -12,7 +12,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -35,23 +35,24 @@ class FileSizeLimiterMiddleware(BaseHTTPMiddleware):
         self.max_size_bytes = max_size_bytes
 
     async def dispatch(self, request: Request, call_next):
-        if self.max_size_bytes is None:
-            return await call_next(request)
-        # Check Content-Length header (if present)
-        content_length = request.headers.get("Content-Length")
-        if content_length and int(content_length) > self.max_size_bytes:
-            return Response(
-                f"Uploaded file is too large. Max limit is {bytes_humanreadable(self.max_size_bytes)}",
-                status_code=413,
-            )
+        if request.method == "POST":
+            if self.max_size_bytes is None:
+                return await call_next(request)
+            # Check Content-Length header (if present)
+            content_length = request.headers.get("Content-Length")
+            if content_length and int(content_length) > self.max_size_bytes:
+                return Response(
+                    f"Uploaded file is too large. Max limit is {bytes_humanreadable(self.max_size_bytes)}",
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                )
 
-        # Alternatively, check the actual body size
-        body = await request.body()
-        if len(body) > self.max_size_bytes:
-            return Response(
-                f"Uploaded file is too large. Max limit is {bytes_humanreadable(self.max_size_bytes)}",
-                status_code=413,
-            )
+            # Alternatively, check the actual body size
+            body = await request.body()
+            if len(body) > self.max_size_bytes:
+                return Response(
+                    f"Uploaded file is too large. Max limit is {bytes_humanreadable(self.max_size_bytes)}",
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                )
 
         return await call_next(request)
 

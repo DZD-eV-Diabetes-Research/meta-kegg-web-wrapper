@@ -23,6 +23,7 @@ from fastapi import (
     HTTPException,
     status,
     Request,
+    status,
     Body,
 )
 from slowapi import Limiter
@@ -360,13 +361,18 @@ def get_api_router(app: FastAPI) -> APIRouter:
         request: Request,
         pipeline_ticket_id: uuid.UUID,
     ):
-        status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
+        pipeline_status: MetaKeggPipelineDef = MetaKeggPipelineStateManager(
             redis_client=redis
-        ).get_pipeline_run_definition(pipeline_ticket_id)
+        ).get_pipeline_run_definition(
+            pipeline_ticket_id,
+            raise_exception_if_not_exists=HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND
+            ),
+        )
 
         """HOTPATCH FOR TESTING LINE-QUEUING IN UI
         current = None
-        if status.state not in ["initialized"]:
+        if pipeline_status.state not in ["initialized"]:
             current = redis.get("TEST_QUEUE_KEY")
             if current is None:
 
@@ -377,15 +383,15 @@ def get_api_router(app: FastAPI) -> APIRouter:
             if current > 0:
                 next = current - 1
                 redis.set("TEST_QUEUE_KEY", str(next))
-                status.state = "queued"
-                status.place_in_queue = current
+                pipeline_status.state = "queued"
+                pipeline_status.place_in_queue = current
             elif current == 0:
                 # reset fake queue for next run
                 redis.delete("TEST_QUEUE_KEY")
         print("QUEUE", current)
         # , "queued", "running", "failed", "success", "expired"]
         """
-        return status
+        return pipeline_status
 
     ##ENDPOINT: /pipeline/{pipeline_ticket_id}/result
     @mekewe_router.get(
