@@ -93,6 +93,9 @@ class PipelineWorker(Process):
                 pipeline_state_manager=state_manager,
             )
             pipeline_processor.run()
+            state_manager.set_pipeline_state_as_finished(
+                next_pipeline_definition_in_queue.ticket.id
+            )
 
     def _process_next_expiring_pipeline(
         self, state_manager: MetaKeggPipelineStateManager

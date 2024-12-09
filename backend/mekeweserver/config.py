@@ -121,6 +121,7 @@ class Config(BaseSettings):
         default=5,
         description="Rate limiting parameter. How many pipeline runs can be started from one IP.",
     )
+    MAX_STATISTICS_AGE_DAYS: Optional[int] = Field(default=730)
 
     REDIS_CONNECTION_PARAMS: RedisConnectionParams | None = Field(
         default=None,

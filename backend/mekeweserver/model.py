@@ -452,11 +452,18 @@ class MetaKeggPipelineDef(BaseModel):
     created_at_utc: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc)
     )
+    queued_at_utc: Optional[datetime.datetime] = Field(default=None)
     started_at_utc: Optional[datetime.datetime] = Field(default=None)
     finished_at_utc: Optional[datetime.datetime] = Field(default=None)
 
     def get_files_base_dir(self) -> Path:
         return Path(PurePath(config.PIPELINE_RUNS_CACHE_DIR, self.ticket.id.hex))
+
+    def get_input_files_base_dir(self) -> Path:
+        return Path(PurePath(self.get_files_base_dir(), "input"))
+
+    def get_input_file_dir(self, parameter: str) -> Path:
+        return Path(PurePath(self.get_input_files_base_dir(), parameter))
 
     def get_input_files_path(
         self, parameter: str, filename: str = None, not_exists_ok: bool = True
@@ -476,18 +483,15 @@ class MetaKeggPipelineDef(BaseModel):
             )
         return result
 
-    def get_input_files_pathes(
+    def get_input_existing_files_pathes(
         self,
         parameter: str,
     ) -> List[Path]:
-        basepath = self.get_input_file_dir()
+        basepath = self.get_input_file_dir(parameter)
         return [
             Path(PurePath(basepath, parameter, filename))
             for filename in self.pipeline_input_file_names
         ]
-
-    def get_input_file_dir(self, parameter: str) -> Path:
-        return Path(PurePath(self.get_files_base_dir(), "input", parameter))
 
     def get_output_files_dir(self) -> Path:
         return Path(PurePath(self.get_files_base_dir(), "output"))
@@ -505,3 +509,30 @@ class MetaKeggPipelineDef(BaseModel):
 
     def generate_output_zip_file_name(self) -> str:
         return f"output-metakegg-{self.pipeline_analyses_method.name}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip"
+
+
+class MetaKeggPipelineStatisticPoint(BaseModel):
+
+    pipeline_waiting_time_sec: int
+    pipeline_running_duration_sec: int
+    pipeline_failed: bool = False
+    pipeline_methodname: str
+    pipeline_finished_at: datetime.datetime
+    input_files_amount: int
+    input_files_size_bytes: int
+    result_file_size_bytes: Optional[int]
+
+
+class MetaKeggPipelineStatistics(BaseModel):
+    statistics_from: Optional[datetime.datetime] = None
+    statistics_to: Optional[datetime.datetime] = None
+    total_pipelines_runs_amount: int = 0
+    total_pipelines_run_successful_amount: int = 0
+    total_pipelines_run_failed_amount: int = 0
+    total_input_files_amount_processed: int = 0
+    total_pipeline_runs_per_methodname: Dict[str, int] = Field(default_factory=dict)
+    average_waiting_time_sec: int = 0
+    average_running_time_sec: int = 0
+    average_files_input_amount: float = 0.0
+    average_files_input_size_bytes: float = 0.0
+    average_result_file_size_bytes: float = 0.0

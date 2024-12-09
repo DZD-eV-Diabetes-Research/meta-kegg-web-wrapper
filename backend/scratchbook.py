@@ -307,4 +307,35 @@ def pydantic_exclude_set_defaults():
     print("EXCULDE BOTH", t.model_dump(exclude_defaults=True, exclude_unset=True))
 
 
-pydantic_exclude_set_defaults()
+def get_seconds_past():
+    import time
+    import datetime
+
+    past = datetime.datetime.now(tz=datetime.timezone.utc)
+    time.sleep(2.3)
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    print((now - past).seconds)
+
+
+def count_per_prop():
+    from pydantic import BaseModel
+    from collections import Counter
+
+    class MetaKeggPipelineStatisticPoint(BaseModel):
+        pipeline_methodname: str
+
+    l = [
+        MetaKeggPipelineStatisticPoint(pipeline_methodname="A"),
+        MetaKeggPipelineStatisticPoint(pipeline_methodname="A"),
+        MetaKeggPipelineStatisticPoint(pipeline_methodname="A"),
+        MetaKeggPipelineStatisticPoint(pipeline_methodname="B"),
+        MetaKeggPipelineStatisticPoint(pipeline_methodname="A"),
+        MetaKeggPipelineStatisticPoint(pipeline_methodname="A"),
+        MetaKeggPipelineStatisticPoint(pipeline_methodname="B"),
+    ]
+
+    methodname_counts = Counter(obj.pipeline_methodname for obj in l)
+    print("methodname_counts", dict(methodname_counts))
+
+
+count_per_prop()

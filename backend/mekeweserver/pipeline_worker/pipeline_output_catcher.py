@@ -48,7 +48,7 @@ def get_pipeline_output_handler(
         pipeline_status = state_clerk.get_pipeline_run_definition(ticket_id)
         if pipeline_status.output_log is None:
             pipeline_status.output_log = ""
-        pipeline_status.output_log += m
+        pipeline_status.output_log += f"{m}\n"
         if config.LOG_LEVEL == "DEBUG":
             # if we are in debug mode, print all the stuff from the metakegg pipeline. otherwise we save it only to the redis server, no redudance in non debug mode.
             original_logger.write(m + "\n")
