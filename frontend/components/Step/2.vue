@@ -76,7 +76,6 @@
         <br>
         <h1 class="text-3xl font-bold" style="color: red;">{{ fileUploadError }}</h1>
     </div>
-    {{ test }}
 </template>
 
 <script setup lang="ts">
@@ -108,7 +107,18 @@ function uncheckedAGB() {
     alert("To upload files you must accept the AGBs")
 }
 
-const test  = ref()
+async function streamToString(stream: ReadableStream): Promise<string> {
+    const reader = stream.getReader();
+    let result = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        result += new TextDecoder().decode(value);
+    }
+
+    return result;
+}
 
 async function printUploadChange(event: Event, file_name: string) {
     fileUploadError.value = ""
@@ -125,18 +135,18 @@ async function printUploadChange(event: Event, file_name: string) {
                 method: 'POST',
                 body: formData,
             })
-        
+
             console.log("response is " + response.status)
 
             if (!response.ok) {
                 console.log("here should be the response status" + response.status);
-                
+
                 if (response.status === 413) {
-                    console.log(response);
-                    
-                    fileUploadError.value = "File is too large. Please upload a smaller file."
+                    console.log(response.body);
+
+                    fileUploadError.value = await streamToString(response.body);
                 } else {
-                fileUploadError.value = `HTTP error! status: ${response.status}`
+                    fileUploadError.value = `HTTP error! status: ${response.status}`
                 }
             }
             input.value = ''
