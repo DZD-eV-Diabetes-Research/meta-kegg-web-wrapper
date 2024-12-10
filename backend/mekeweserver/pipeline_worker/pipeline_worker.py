@@ -52,6 +52,7 @@ class PipelineWorker(Process):
                 self._process_next_expiring_pipeline(pipeline_state_manager)
                 self._process_next_deletable_pipeline(pipeline_state_manager)
                 self._process_next_abandoned_pipeline_def(pipeline_state_manager)
+                self._purge_old_statistics(pipeline_state_manager)
             except Exception as e:
                 exception_count: int = 99999
                 try:
@@ -156,6 +157,9 @@ class PipelineWorker(Process):
         state_manager.delete_pipeline_status(
             ticket_id=next_pipeline_definition_that_is_deletable.ticket.id
         )
+
+    def _purge_old_statistics(self, state_manager: MetaKeggPipelineStateManager):
+        state_manager.remove_expired_pipeline_run_statistic_points()
 
     def _clean_zombie_files(self, state_manager: MetaKeggPipelineStateManager):
         cache_dir = Path(config.PIPELINE_RUNS_CACHE_DIR)

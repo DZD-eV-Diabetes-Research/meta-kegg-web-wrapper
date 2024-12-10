@@ -286,13 +286,19 @@ class MetaKeggPipelineStateManager:
             datapoints = [
                 d
                 for d in datapoints
-                if (datetime.datetime.now() - d.pipeline_finished_at).days < days_limit
+                if (
+                    datetime.datetime.now(tz=datetime.UTC) - d.pipeline_finished_at
+                ).days
+                < days_limit
             ]
         if days_offset is not None:
             datapoints = [
                 d
                 for d in datapoints
-                if (datetime.datetime.now() - d.pipeline_finished_at).days >= days_limit
+                if (
+                    datetime.datetime.now(tz=datetime.UTC) - d.pipeline_finished_at
+                ).days
+                >= days_limit
             ]
 
         return MetaKeggPipelineStatistics(
@@ -359,6 +365,31 @@ class MetaKeggPipelineStateManager:
                 else 0
             ),
         )
+
+    def remove_expired_pipeline_run_statistic_points(
+        self,
+    ) -> MetaKeggPipelineStatistics:
+        all_datapoints_raw: List[MetaKeggPipelineStatisticPoint] = (
+            self.redis_client.lrange(self.REDIS_NAME_PIPELINE_STATISTICS, 0, -1)
+        )
+
+        all_datapoints = [
+            MetaKeggPipelineStatisticPoint.model_validate_json(d_raw)
+            for d_raw in all_datapoints_raw
+        ]
+        datapoints: List[MetaKeggPipelineStatisticPoint] = all_datapoints
+
+        datapoints_to_be_deleted = {
+            index: d
+            for index, d in enumerate(datapoints)
+            if (datetime.datetime.now(tz=datetime.UTC) - d.pipeline_finished_at).days
+            > config.MAX_STATISTICS_AGE_DAYS
+        }
+        for index, data in datapoints_to_be_deleted.items():
+            log.debug(f"Delete Statistics Point [{index}]{data}")
+            self.redis_client.lrem(
+                self.REDIS_NAME_PIPELINE_STATISTICS, 1, data.model_dump_json()
+            )
 
     def wipe_pipeline_run(self, ticket_id: uuid.UUID) -> Optional[MetaKeggPipelineDef]:
         pipeline_status = self.get_pipeline_run_definition(ticket_id)
