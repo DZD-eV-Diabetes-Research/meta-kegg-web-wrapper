@@ -93,6 +93,9 @@ class PipelineWorker(Process):
                 pipeline_state_manager=state_manager,
             )
             pipeline_processor.run()
+            state_manager.set_pipeline_state_as_finished(
+                next_pipeline_definition_in_queue.ticket.id
+            )
 
     def _process_next_expiring_pipeline(
         self, state_manager: MetaKeggPipelineStateManager
@@ -108,16 +111,13 @@ class PipelineWorker(Process):
         # we first need to set the pipelinestate to expired before deleting anything to prevent race cond.
         next_pipeline_definition_that_is_expired.state = "expired"
         # set a "deleted" marker behind the input filename list
-        next_pipeline_definition_that_is_expired.pipeline_input_file_names = [
-            f"{fn} (Deleted)"
-            for fn in next_pipeline_definition_that_is_expired.pipeline_input_file_names
-        ]
+        next_pipeline_definition_that_is_expired.pipeline_input_file_names = {}
         output_zip_name = (
             next_pipeline_definition_that_is_expired.pipeline_output_zip_file_name
         )
         if output_zip_name is not None:
             next_pipeline_definition_that_is_expired.pipeline_output_zip_file_name = (
-                f"{output_zip_name} (Deleted)"
+                None
             )
         state_manager.set_pipeline_run_definition(
             next_pipeline_definition_that_is_expired

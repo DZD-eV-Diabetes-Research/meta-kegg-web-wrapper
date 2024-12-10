@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional
+from collections import Counter
 import redis
 from pathlib import Path, PurePath
 import uuid
@@ -15,11 +16,17 @@ from mekeweserver.model import (
     MetaKeggPipelineAnalysisMethodDocs,
     MetaKeggPipelineInputParamsValues,
     MetaKeggPipelineInputParamsValuesAllOptional,
+    MetaKeggPipelineStatisticPoint,
+    MetaKeggPipelineStatistics,
 )
 from mekeweserver.config import Config, get_config
 from mekeweserver.log import get_logger
 from mekeweserver.model import find_parameter_docs_by_name
-from mekeweserver.utils import get_directory_size_bytes, bytes_humanreadable
+from mekeweserver.utils import (
+    get_directory_size_bytes,
+    bytes_humanreadable,
+    count_files_in_dir_tree,
+)
 
 config: Config = get_config()
 log = get_logger()
@@ -28,6 +35,7 @@ log = get_logger()
 class MetaKeggPipelineStateManager:
     REDIS_NAME_PIPELINE_STATES = "pipeline_states"
     REDIS_NAME_PIPELINE_QUEUE = "pipeline_queue"
+    REDIS_NAME_PIPELINE_STATISTICS = "pipeline_statistics"
 
     def __init__(self, redis_client: redis.Redis):
         self.redis_client = redis_client
@@ -201,6 +209,7 @@ class MetaKeggPipelineStateManager:
         # ...reset done
 
         pipeline_status.state = "queued"
+        pipeline_status.queued_at_utc = datetime.datetime.now(tz=datetime.timezone.utc)
         queue_length = self.redis_client.llen(self.REDIS_NAME_PIPELINE_QUEUE)
 
         self.set_pipeline_run_definition(pipeline_status)
@@ -220,19 +229,136 @@ class MetaKeggPipelineStateManager:
         return pipeline_status
 
     def set_pipeline_state_as_finished(
-        self, ticket_id: uuid.UUID, error_msg: str = None, result_file_path: Path = None
+        self, ticket_id: uuid.UUID
     ) -> MetaKeggPipelineDef:
         pipeline_status = self.get_pipeline_run_definition(ticket_id)
-        pipeline_status.state = "failed" if error_msg is not None else "success"
-        if error_msg:
-            pipeline_status.error = error_msg
-        else:
-            pipeline_status.result_path = result_file_path
+        pipeline_status.state = (
+            "failed" if pipeline_status.error is not None else "success"
+        )
         pipeline_status.finished_at_utc = datetime.datetime.now(
             tz=datetime.timezone.utc
         )
         self.set_pipeline_run_definition(pipeline_status)
+        self.create_pipeline_run_statistic_point(pipeline_status)
         return pipeline_status
+
+    def create_pipeline_run_statistic_point(self, pipeline_status: MetaKeggPipelineDef):
+        data_point = MetaKeggPipelineStatisticPoint(
+            pipeline_waiting_time_sec=(
+                pipeline_status.started_at_utc - pipeline_status.queued_at_utc
+            ).seconds,
+            pipeline_running_duration_sec=(
+                pipeline_status.finished_at_utc - pipeline_status.started_at_utc
+            ).seconds,
+            pipeline_failed=True if pipeline_status.state == "failed" else False,
+            pipeline_methodname=pipeline_status.pipeline_analyses_method.name,
+            pipeline_finished_at=pipeline_status.finished_at_utc,
+            input_files_amount=count_files_in_dir_tree(
+                pipeline_status.get_input_files_base_dir()
+            ),
+            input_files_size_bytes=get_directory_size_bytes(
+                pipeline_status.get_input_files_base_dir()
+            ),
+            result_file_size_bytes=(
+                get_directory_size_bytes(pipeline_status.get_output_zip_file_path())
+                if pipeline_status.get_output_zip_file_path() is not None
+                else None
+            ),
+        )
+        self.redis_client.rpush(
+            self.REDIS_NAME_PIPELINE_STATISTICS,
+            data_point.model_dump_json(),
+        )
+
+    def calculate_pipeline_run_statistic_point(
+        self, days_limit: Optional[int] = None, days_offset: Optional[int] = None
+    ) -> MetaKeggPipelineStatistics:
+        all_datapoints_raw: List[MetaKeggPipelineStatisticPoint] = (
+            self.redis_client.lrange(self.REDIS_NAME_PIPELINE_STATISTICS, 0, -1)
+        )
+
+        all_datapoints = [
+            MetaKeggPipelineStatisticPoint.model_validate_json(d_raw)
+            for d_raw in all_datapoints_raw
+        ]
+        datapoints: List[MetaKeggPipelineStatisticPoint] = all_datapoints
+        if days_limit is not None:
+            datapoints = [
+                d
+                for d in datapoints
+                if (datetime.datetime.now() - d.pipeline_finished_at).days < days_limit
+            ]
+        if days_offset is not None:
+            datapoints = [
+                d
+                for d in datapoints
+                if (datetime.datetime.now() - d.pipeline_finished_at).days >= days_limit
+            ]
+
+        return MetaKeggPipelineStatistics(
+            statistics_from=(
+                min(
+                    datapoints, key=lambda obj: obj.pipeline_finished_at
+                ).pipeline_finished_at
+                if datapoints
+                else None
+            ),
+            statistics_to=(
+                max(
+                    datapoints, key=lambda obj: obj.pipeline_finished_at
+                ).pipeline_finished_at
+                if datapoints
+                else None
+            ),
+            total_pipelines_runs_amount=len(datapoints),
+            total_pipelines_run_successful_amount=len(
+                [d for d in datapoints if not d.pipeline_failed]
+            ),
+            total_pipelines_run_failed_amount=len(
+                [d for d in datapoints if d.pipeline_failed]
+            ),
+            total_input_files_amount_processed=sum(
+                [d.input_files_amount for d in datapoints if d.pipeline_failed]
+            ),
+            total_pipeline_runs_per_methodname=dict(
+                Counter(d.pipeline_methodname for d in datapoints)
+            ),
+            average_waiting_time_sec=int(
+                sum(d.pipeline_waiting_time_sec for d in datapoints) / len(datapoints)
+                if datapoints
+                else 0
+            ),
+            average_running_time_sec=int(
+                sum(d.pipeline_running_duration_sec for d in datapoints)
+                / len(datapoints)
+                if datapoints
+                else 0
+            ),
+            average_files_input_amount=(
+                sum(d.input_files_amount for d in datapoints) / len(datapoints)
+                if datapoints
+                else 0
+            ),
+            average_files_input_size_bytes=(
+                sum(d.input_files_size_bytes for d in datapoints) / len(datapoints)
+                if datapoints
+                else 0
+            ),
+            average_result_file_size_bytes=(
+                (
+                    sum(
+                        d.input_files_size_bytes
+                        for d in datapoints
+                        if d.result_file_size_bytes is not None
+                    )
+                    / len(
+                        [d for d in datapoints if d.result_file_size_bytes is not None]
+                    )
+                )
+                if [d for d in datapoints if d.result_file_size_bytes is not None]
+                else 0
+            ),
+        )
 
     def wipe_pipeline_run(self, ticket_id: uuid.UUID) -> Optional[MetaKeggPipelineDef]:
         pipeline_status = self.get_pipeline_run_definition(ticket_id)
@@ -282,7 +408,10 @@ class MetaKeggPipelineStateManager:
             pipeline_status = MetaKeggPipelineDef.model_validate_json(
                 pipeline_state_json_raw
             )
-            if self.is_pipeline_run_expired(pipeline_status):
+            if (
+                self.is_pipeline_run_expired(pipeline_status)
+                and pipeline_status.state != "expired"
+            ):
                 if set_status_expired:
                     pipeline_status.state = "expired"
                     self.set_pipeline_run_definition(pipeline_status)
@@ -334,7 +463,7 @@ class MetaKeggPipelineStateManager:
             minutes=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN
         )
         deleteable_datetime = expire_datetime + datetime.timedelta(
-            minutes=config.PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER
+            minutes=config.PIPELINE_RESULT_DELETED_AFTER_MIN
         )
         if deleteable_datetime < datetime.datetime.now(tz=datetime.timezone.utc):
             return True

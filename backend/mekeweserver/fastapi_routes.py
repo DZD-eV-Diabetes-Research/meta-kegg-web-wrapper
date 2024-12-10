@@ -31,11 +31,11 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from multiprocessing import Process
 
-from mekeweserver.config import Config, get_config
+
 from mekeweserver.db import get_redis_client
 from mekeweserver.pipeline_status_clerk import MetaKeggPipelineStateManager
 
-from mekeweserver.utils import get_directory_size_bytes
+from mekeweserver.utils import get_directory_size_bytes, bytes_humanreadable
 from metaKEGG import PipelineAsync
 from mekeweserver.model import (
     MetaKeggPipelineInputParamsDocs,
@@ -52,14 +52,18 @@ from mekeweserver.model import (
     MetaKeggPipelineAnalysisMethods,
     MetaKeggPipelineInputParamsValues,
     MetaKeggPipelineInputParamsValuesAllOptional,
+    MetaKeggPipelineStatistics,
     get_param_docs,
     get_param_model,
     GlobalParamModel,
     GlobalParamModelOptional,
     MetaKeggPipelineDefStates,
 )
+from mekeweserver.config import Config, get_config
+from mekeweserver.log import get_logger
 
 config: Config = get_config()
+log = get_logger()
 
 
 def http_exception_to_resp_desc(
@@ -268,10 +272,14 @@ def get_api_router(app: FastAPI) -> APIRouter:
                     status_code=status.HTTP_411_LENGTH_REQUIRED,
                     detail="Client must provide a 'Content-Length' header.",
                 )
+            cache_storage_usage_bytes = pipeline_manager.get_cache_usage_size_bytes()
             if (
-                pipeline_manager.get_cache_usage_size_bytes() + int(content_length)
+                cache_storage_usage_bytes + int(content_length)
                 > config.MAX_CACHE_SIZE_BYTES
             ):
+                log.info(
+                    f"CACHE SIZE USAGE: {bytes_humanreadable(cache_storage_usage_bytes)} used of {bytes_humanreadable(config.MAX_CACHE_SIZE_BYTES)}"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_507_INSUFFICIENT_STORAGE,
                     detail="Out of storage space. Please try again later, when some Pipelineruns are flushed.",
@@ -523,5 +531,27 @@ def get_info_config_router(app: FastAPI) -> APIRouter:
         for link in config.CLIENT_LINK_LIST:
             res.append(MetaKeggClientLink(**link))
         return res
+
+    @mekeweclient_info_router.get(
+        "/stats",
+        response_model=MetaKeggPipelineStatistics,
+        description="Get some statistics about past pipeline runs",
+        tags=["Config/Infos"],
+    )
+    @limiter.limit(f"1/second")
+    async def get_statistics(
+        request: Request,
+        days_limit: Optional[int] = Query(
+            default=None,
+            description="Only include pipeline runs that are not older as this amount of days",
+        ),
+        days_offset: Optional[int] = Query(
+            default=None,
+            description="Only include pipeline runs that are at least older as this amount of days",
+        ),
+    ) -> MetaKeggPipelineStatistics:
+        return MetaKeggPipelineStateManager(
+            redis_client=redis
+        ).calculate_pipeline_run_statistic_point(days_limit, days_offset)
 
     return mekeweclient_info_router

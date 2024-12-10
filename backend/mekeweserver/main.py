@@ -113,6 +113,7 @@ def run_server(env: Dict = None):
 
     atexit.register(worker_process.stop_event.set)
     worker_process.start()
+    Path(config.PIPELINE_RUNS_CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
     from mekeweserver.fastapi_app import get_fastapi_app
 

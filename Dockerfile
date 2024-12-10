@@ -1,12 +1,13 @@
 # FRONTEND BUILD STAGE
 
 # frontend not existent atm
-FROM oven/bun AS mekewe-frontend-build
+#FROM oven/bun AS mekewe-frontend-build
+FROM node AS mekewe-frontend-build
 RUN mkdir /frontend_build
 WORKDIR /frontend_build
 COPY frontend /frontend_build
-RUN bun install && bun run build && bunx nuxi generate
-
+#RUN bun install &&  bunx nuxi generate
+RUN npx nuxi generate
 # BACKEND BUILD AND RUN STAGE
 FROM python:3.11 AS mekewe-backend
 ARG BASEDIR=/opt/mekewe
