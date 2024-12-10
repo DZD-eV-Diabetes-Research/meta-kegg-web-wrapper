@@ -408,7 +408,10 @@ class MetaKeggPipelineStateManager:
             pipeline_status = MetaKeggPipelineDef.model_validate_json(
                 pipeline_state_json_raw
             )
-            if self.is_pipeline_run_expired(pipeline_status):
+            if (
+                self.is_pipeline_run_expired(pipeline_status)
+                and pipeline_status.state != "expired"
+            ):
                 if set_status_expired:
                     pipeline_status.state = "expired"
                     self.set_pipeline_run_definition(pipeline_status)
@@ -460,7 +463,7 @@ class MetaKeggPipelineStateManager:
             minutes=config.PIPELINE_RESULT_EXPIRED_AFTER_MIN
         )
         deleteable_datetime = expire_datetime + datetime.timedelta(
-            minutes=config.PIPELINE_ABANDONED_DEFINITION_DELETED_AFTER
+            minutes=config.PIPELINE_RESULT_DELETED_AFTER_MIN
         )
         if deleteable_datetime < datetime.datetime.now(tz=datetime.timezone.utc):
             return True
