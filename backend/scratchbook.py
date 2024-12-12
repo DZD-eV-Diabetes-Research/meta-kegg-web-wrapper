@@ -338,4 +338,7 @@ def count_per_prop():
     print("methodname_counts", dict(methodname_counts))
 
 
-count_per_prop()
+def get_root_dir():
+    from pathlib import Path
+
+    return Path(__file__).parent

@@ -6,7 +6,7 @@
 #
 annotated-types==0.7.0
     # via pydantic
-anyio==4.6.2.post1
+anyio==4.7.0
     # via starlette
 biopython==1.84
     # via metakegg
@@ -36,10 +36,12 @@ et-xmlfile==2.0.0
     # via openpyxl
 fakeredis==2.26.1
     # via mekeweserver (backend/pyproject.toml)
-fastapi==0.115.5
+fastapi==0.115.6
     # via mekeweserver (backend/pyproject.toml)
-fonttools==4.55.1
+fonttools==4.55.3
     # via matplotlib
+fsspec==2024.10.0
+    # via metakegg
 getversion==1.0.2
     # via mekeweserver (backend/pyproject.toml)
 h11==0.14.0
@@ -56,7 +58,7 @@ limits==3.14.1
     # via slowapi
 matplotlib==3.9.2
     # via metakegg
-metakegg==1.0.0
+metakegg==1.0.1
     # via mekeweserver (backend/pyproject.toml)
 numpy==2.1.3
     # via
@@ -86,11 +88,11 @@ pluggy==1.5.0
     # via pytest
 psyplus==0.9.5
     # via mekeweserver (backend/pyproject.toml)
-pyaml==24.9.0
+pyaml==24.12.1
     # via psyplus
 pycparser==2.22
     # via cffi
-pydantic==2.10.2
+pydantic==2.10.3
     # via
     #   fastapi
     #   mekeweserver (backend/pyproject.toml)
@@ -132,7 +134,7 @@ pyyaml==6.0.2
     # via
     #   mekeweserver (backend/pyproject.toml)
     #   pyaml
-redis==5.2.0
+redis==5.2.1
     # via
     #   fakeredis
     #   mekeweserver (backend/pyproject.toml)
@@ -149,7 +151,7 @@ setuptools-scm==8.1.0
     #   getversion
     #   mekeweserver (backend/pyproject.toml)
     #   metakegg
-six==1.16.0
+six==1.17.0
     # via
     #   mekeweserver (backend/pyproject.toml)
     #   python-dateutil
@@ -165,6 +167,7 @@ stdlib-list==0.11.0
     # via getversion
 typing-extensions==4.12.2
     # via
+    #   anyio
     #   fastapi
     #   limits
     #   pydantic

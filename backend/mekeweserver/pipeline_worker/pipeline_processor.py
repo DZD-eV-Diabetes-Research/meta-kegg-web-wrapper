@@ -1,4 +1,5 @@
 from typing import List, Callable, Awaitable, Any, Optional, Type, Dict
+import os
 from pydantic import BaseModel
 from io import StringIO
 import sys
@@ -24,6 +25,7 @@ from mekeweserver.pipeline_worker.pipeline_output_catcher import (
     OutputCatcher,
     get_pipeline_output_handler,
 )
+from mekeweserver.utils import get_module_root_dir
 from mekeweserver.log import get_logger
 
 log = get_logger()
@@ -127,7 +129,7 @@ class MetakeggPipelineProcessor:
         params = {}
         param_docs = get_param_docs(method)
         for param_doc in param_docs:
-            log.info(
+            log.debug(
                 "self.pipeline_definition.pipeline_input_file_names",
                 self.pipeline_definition.pipeline_input_file_names,
             )
@@ -192,7 +194,17 @@ class MetakeggPipelineProcessor:
             if (
                 "input_file_path" in global_params_dict
                 and isinstance(global_params_dict["input_file_path"], list)
-                and "single" in method.name.lower()
+                and method.name
+                in [
+                    "gene_expression",
+                    "transcript_expression",
+                    "methylated_genes",
+                    "mirna_target_genes",
+                    "methylated_and_mirna_target_genes",
+                    "bulk_rnaseq_mapping",
+                    "demirs_per_gene",
+                    "dmps_per_gene",
+                ]
             ):
                 global_params_dict["input_file_path"] = global_params_dict[
                     "input_file_path"
@@ -211,9 +223,14 @@ class MetakeggPipelineProcessor:
             self._method_params = self._gather_analyse_method_params(
                 analysis_method_func
             )
+            workdir = os.getcwd()
             event_loop.run_until_complete(
                 analysis_method_func(**self._method_params.model_dump())
             )
+            # HOTfix for https://github.com/DZD-eV-Diabetes-Research/meta-kegg-web-wrapper/issues/10
+            # MetaKegg has a bug in which it will set the working dir to a new/wrong place and wont reset.
+            # we need to make sure to always set it back again
+            os.chdir(workdir)
 
     def pack_output(self):
         # todo: i dont like this function here...maybe find a better place

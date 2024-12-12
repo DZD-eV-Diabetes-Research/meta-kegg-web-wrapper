@@ -30,23 +30,17 @@ log = get_logger()
 
 
 class MetaKeggPipelineAnalysisMethods(Enum):
-    single_input_genes = partial(PipelineAsync.single_input_genes)
-    single_input_transcripts = partial(PipelineAsync.single_input_transcripts)
-    single_input_genes_bulk_mapping = partial(
-        PipelineAsync.single_input_genes_bulk_mapping
-    )
+    gene_expression = partial(PipelineAsync.gene_expression)
+    transcript_expression = partial(PipelineAsync.transcript_expression)
     multiple_inputs = partial(PipelineAsync.multiple_inputs)
-    single_input_with_methylation = partial(PipelineAsync.single_input_with_methylation)
-    single_input_with_methylation_quantification = partial(
-        PipelineAsync.single_input_with_methylation_quantification
+    methylated_genes = partial(PipelineAsync.methylated_genes)
+    mirna_target_genes = partial(PipelineAsync.mirna_target_genes)
+    methylated_and_mirna_target_genes = partial(
+        PipelineAsync.methylated_and_mirna_target_genes
     )
-    single_input_with_miRNA = partial(PipelineAsync.single_input_with_miRNA)
-    single_input_with_miRNA_quantification = partial(
-        PipelineAsync.single_input_with_miRNA_quantification
-    )
-    single_input_with_methylation_and_miRNA = partial(
-        PipelineAsync.single_input_with_methylation_and_miRNA
-    )
+    demirs_per_gene = partial(PipelineAsync.demirs_per_gene)
+    dmps_per_gene = partial(PipelineAsync.dmps_per_gene)
+    bulk_rnaseq_mapping = partial(PipelineAsync.bulk_rnaseq_mapping)
 
 
 class MetaKeggPipelineAnalysisMethod(BaseModel):
@@ -60,23 +54,17 @@ class MetaKeggPipelineAnalysisMethod(BaseModel):
 
 
 class MetaKeggPipelineAnalysisMethodDocs(Enum):
-    single_input_genes = MetaKeggPipelineAnalysisMethod(
-        name="single_input_genes",
+    gene_expression = MetaKeggPipelineAnalysisMethod(
+        name="gene_expression",
         display_name="Gene expression",
         internal_id=1,
         desc="Perform the Single Input Analysis for Gene IDs.",
     )
-    single_input_transcripts = MetaKeggPipelineAnalysisMethod(
-        name="single_input_transcripts",
+    transcript_expression = MetaKeggPipelineAnalysisMethod(
+        name="transcript_expression",
         display_name="Transcript expression",
         internal_id=2,
         desc="Perform the Single Input Analysis for Transcript IDs.",
-    )
-    single_input_genes_bulk_mapping = MetaKeggPipelineAnalysisMethod(
-        name="single_input_genes_bulk_mapping",
-        display_name="Bulk RNAseq mapping",
-        internal_id=3,
-        desc="Perform a single input analysis with bulk mapping for genes.",
     )
     multiple_inputs = MetaKeggPipelineAnalysisMethod(
         name="multiple_inputs",
@@ -84,35 +72,43 @@ class MetaKeggPipelineAnalysisMethodDocs(Enum):
         internal_id=4,
         desc="Perform the Multiple Inputs Analysis.",
     )
-    single_input_with_methylation = MetaKeggPipelineAnalysisMethod(
-        name="single_input_with_methylation",
+    methylated_genes = MetaKeggPipelineAnalysisMethod(
+        name="methylated_genes",
         display_name="Methylated genes",
         internal_id=5,
         desc="Perform Single Input Analysis with Methylation.",
     )
-    single_input_with_methylation_quantification = MetaKeggPipelineAnalysisMethod(
-        name="single_input_with_methylation_quantification",
-        display_name="DMPs per gene",
-        internal_id=6,
-        desc="Perform Single Input Analysis with methylation quantification.",
-    )
-    single_input_with_miRNA = MetaKeggPipelineAnalysisMethod(
-        name="single_input_with_miRNA",
+    mirna_target_genes = MetaKeggPipelineAnalysisMethod(
+        name="mirna_target_genes",
         display_name="miRNA target genes",
         internal_id=7,
-        desc="Perform Single Input Analysis with miRNA.",
+        desc="Perform the miRNA target genes pipeline.",
     )
-    single_input_with_miRNA_quantification = MetaKeggPipelineAnalysisMethod(
-        name="single_input_with_miRNA_quantification",
+
+    methylated_and_mirna_target_genes = MetaKeggPipelineAnalysisMethod(
+        name="methylated_and_mirna_target_genes",
+        display_name="Methylated + miRNA target genes",
+        internal_id=6,
+        desc="Performs the Methylated and miRNA target genes pipeline.",
+    )
+
+    bulk_rnaseq_mapping = MetaKeggPipelineAnalysisMethod(
+        name="bulk_rnaseq_mapping",
+        display_name="Bulk RNAseq mapping",
+        internal_id=3,
+        desc="Perform a single input analysis with bulk mapping for genes.",
+    )
+    demirs_per_gene = MetaKeggPipelineAnalysisMethod(
+        name="demirs_per_gene",
         display_name="DEmiRs per gene",
         internal_id=8,
-        desc="Perform Single Input Analysis with miRNA.",
+        desc="Performs the DEmiRs per gene pipeline.",
     )
-    single_input_with_methylation_and_miRNA = MetaKeggPipelineAnalysisMethod(
-        name="single_input_with_methylation_and_miRNA",
-        display_name="Methylated + miRNA target genes",
+    dmps_per_gene = MetaKeggPipelineAnalysisMethod(
+        name="dmps_per_gene",
+        display_name="DMPs per gene",
         internal_id=9,
-        desc="Perform Single Input Analysis with miRNA.",
+        desc="Performs the DMPs per gene pipeline",
     )
 
 

@@ -113,7 +113,7 @@ onMounted(() => {
     if (pipelineStore.pipelineStatus?.pipeline_analyses_method?.name) {
         pipelineStore.selectedMethod = pipelineStore.pipelineStatus?.pipeline_analyses_method.name
     } else {
-        pipelineStore.selectedMethod = "single_input_genes"
+        pipelineStore.selectedMethod = "gene_expression"
     }
 });
 

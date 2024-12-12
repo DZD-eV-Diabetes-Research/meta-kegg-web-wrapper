@@ -33,3 +33,7 @@ def count_files_in_dir_tree(dir: Path) -> int:
         elif obj.is_dir():
             sum += count_files_in_dir_tree(obj)
     return sum
+
+
+def get_module_root_dir() -> Path:
+    return Path(__file__).parent
