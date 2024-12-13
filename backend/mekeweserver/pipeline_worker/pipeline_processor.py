@@ -223,14 +223,16 @@ class MetakeggPipelineProcessor:
             self._method_params = self._gather_analyse_method_params(
                 analysis_method_func
             )
-            workdir = os.getcwd()
+            # workdir = os.getcwd()
+            # log.info(("workdir", workdir))
+            os.chdir(get_module_root_dir())
             event_loop.run_until_complete(
                 analysis_method_func(**self._method_params.model_dump())
             )
             # HOTfix for https://github.com/DZD-eV-Diabetes-Research/meta-kegg-web-wrapper/issues/10
             # MetaKegg has a bug in which it will set the working dir to a new/wrong place and wont reset.
             # we need to make sure to always set it back again
-            os.chdir(workdir)
+            os.chdir(get_module_root_dir())
 
     def pack_output(self):
         # todo: i dont like this function here...maybe find a better place
