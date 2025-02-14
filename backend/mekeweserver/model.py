@@ -66,6 +66,12 @@ class MetaKeggPipelineAnalysisMethodDocs(Enum):
         internal_id=2,
         desc="Perform the Single Input Analysis for Transcript IDs.",
     )
+    bulk_rnaseq_mapping = MetaKeggPipelineAnalysisMethod(
+        name="bulk_rnaseq_mapping",
+        display_name="Bulk RNAseq mapping",
+        internal_id=3,
+        desc="Perform a single input analysis with bulk mapping for genes.",
+    )
     multiple_inputs = MetaKeggPipelineAnalysisMethod(
         name="multiple_inputs",
         display_name="Multiple inputs",
@@ -78,25 +84,18 @@ class MetaKeggPipelineAnalysisMethodDocs(Enum):
         internal_id=5,
         desc="Perform Single Input Analysis with Methylation.",
     )
+    dmps_per_gene = MetaKeggPipelineAnalysisMethod(
+        name="dmps_per_gene",
+        display_name="DMPs per gene",
+        internal_id=9,
+        desc="Performs the DMPs per gene pipeline",
+    )
+
     mirna_target_genes = MetaKeggPipelineAnalysisMethod(
         name="mirna_target_genes",
         display_name="miRNA target genes",
         internal_id=7,
         desc="Perform the miRNA target genes pipeline.",
-    )
-
-    methylated_and_mirna_target_genes = MetaKeggPipelineAnalysisMethod(
-        name="methylated_and_mirna_target_genes",
-        display_name="Methylated + miRNA target genes",
-        internal_id=6,
-        desc="Performs the Methylated and miRNA target genes pipeline.",
-    )
-
-    bulk_rnaseq_mapping = MetaKeggPipelineAnalysisMethod(
-        name="bulk_rnaseq_mapping",
-        display_name="Bulk RNAseq mapping",
-        internal_id=3,
-        desc="Perform a single input analysis with bulk mapping for genes.",
     )
     demirs_per_gene = MetaKeggPipelineAnalysisMethod(
         name="demirs_per_gene",
@@ -104,11 +103,11 @@ class MetaKeggPipelineAnalysisMethodDocs(Enum):
         internal_id=8,
         desc="Performs the DEmiRs per gene pipeline.",
     )
-    dmps_per_gene = MetaKeggPipelineAnalysisMethod(
-        name="dmps_per_gene",
-        display_name="DMPs per gene",
-        internal_id=9,
-        desc="Performs the DMPs per gene pipeline",
+    methylated_and_mirna_target_genes = MetaKeggPipelineAnalysisMethod(
+        name="methylated_and_mirna_target_genes",
+        display_name="Methylated + miRNA target genes",
+        internal_id=6,
+        desc="Performs the Methylated and miRNA target genes pipeline.",
     )
 
 
