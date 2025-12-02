@@ -6,8 +6,8 @@ services:
       - 8282:8282
     environment:
       - REDIS_CONNECTION_PARAMS__host=redis
-      - REDIS_CONNECTION_PARAMS__port=${REDIS_HOST_PASSWORD:-PLACEHOLDERPASSWORD}
-      - REDIS_CONNECTION_PARAMS__password
+      #- REDIS_CONNECTION_PARAMS__port
+      - REDIS_CONNECTION_PARAMS__password=${REDIS_HOST_PASSWORD:-PLACEHOLDERPASSWORD}
   redis:
     image: redis:alpine
     restart: always
