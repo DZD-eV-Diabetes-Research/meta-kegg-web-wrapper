@@ -440,12 +440,13 @@ def get_client_router(app: FastAPI) -> APIRouter:
         "/{path_name:path}", description="Client serving path", tags=["Webclient"]
     )
     async def serve_frontend(path_name: Optional[str] = None):
+        frontend_dir = Path(config.FRONTEND_FILES_DIR).resolve()
+        file = frontend_dir.joinpath("index.html")
         if path_name:
-            file = os.path.join(config.FRONTEND_FILES_DIR, path_name)
-            if not Path(file).exists():
-                file = os.path.join(config.FRONTEND_FILES_DIR, "index.html")
-        else:
-            file = os.path.join(config.FRONTEND_FILES_DIR, "index.html")
+            requested_file = frontend_dir.joinpath(path_name).resolve()
+            # only serve files inside the frontend dir (no path traversal). anything else (e.g. client side routes like /help) gets the index.html
+            if requested_file.is_relative_to(frontend_dir) and requested_file.is_file():
+                file = requested_file
         return FileResponse(file)
 
     return mekeweclient_router

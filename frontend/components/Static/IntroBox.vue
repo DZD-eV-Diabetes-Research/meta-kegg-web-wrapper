@@ -16,7 +16,7 @@
 const configStore = useConfigStore()
 
 function replaceWithBr() {
-    return configStore.config?.entry_text.replace(/\n/g, "<br/>")
+    return configStore.config?.entry_text?.replace(/\n/g, "<br/>")
 }
 console.log(replaceWithBr());
 
