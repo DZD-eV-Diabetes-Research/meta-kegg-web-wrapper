@@ -1,0 +1,11 @@
+# keep local build artifacts out of the image, so local builds match CI builds from a clean checkout
+.metakeggwebcondaenv
+**/__pycache__
+**/*.egg-info
+**/.env
+frontend/node_modules
+frontend/.nuxt
+frontend/.output
+frontend/dist
+frontend/bun.lockb
+backend/tests/testcachedir

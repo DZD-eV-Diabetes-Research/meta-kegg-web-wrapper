@@ -32,10 +32,10 @@ interface Ticket_ID {
 }
 
 const { data: config, error: configError } = await useFetch<Config>(`${runtimeConfig.public.baseURL}/config`)
-configStore.config = config.value
+configStore.config = config.value ?? null
 
 const { data: infoLinks, error: linkError } = await useFetch<InfoLinks[]>(`${runtimeConfig.public.baseURL}/info-links`)
-configStore.infoLinks = infoLinks.value
+configStore.infoLinks = infoLinks.value ?? null
 
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 

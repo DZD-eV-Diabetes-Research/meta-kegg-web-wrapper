@@ -47,7 +47,7 @@ const route = useRoute()
 pipelineStore.ticket_id  = route.params.id as string
 
 const { data: pipelineStatus, error: statusError } = await useFetch<PipelineStatus>(`${runtimeConfig.public.baseURL}/api/pipeline/${pipelineStore.ticket_id }/status`)
-pipelineStore.pipelineStatus = pipelineStatus.value
+pipelineStore.pipelineStatus = pipelineStatus.value ?? null
 
 const { data: healthStatus, error: healthFetchError } = await useFetch<HealthStatus>(`${runtimeConfig.public.baseURL}/health`)
 

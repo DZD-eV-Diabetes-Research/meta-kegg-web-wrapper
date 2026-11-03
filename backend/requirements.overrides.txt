@@ -1,0 +1,22 @@
+# metaKEGG 1.0.1 (latest release on pypi.org) pins all of its dependencies to exact versions from late 2024.
+# Many of these have known vulnerabilities. This file overrides metaKEGG's pins when compiling backend/requirements.txt
+# (see build_requirement_files.sh). Because the compiled requirements.txt contradicts metaKEGG's declared pins,
+# it must be installed with `pip install --no-deps -r requirements.txt` (the lock file is complete).
+#
+# Not overridable: pypdf2 (3.0.1 is the last release ever, the project was renamed to pypdf). metaKEGG imports PyPDF2 directly.
+
+biopython
+fsspec
+openpyxl
+pyopenssl
+pytest
+pytest-asyncio
+reportlab
+requests
+setuptools
+setuptools-scm
+xlsxwriter
+# stay on the major versions metaKEGG was built against
+numpy>=2.1.3,<3
+pandas>=2.2.3,<3
+matplotlib>=3.9.2,<3.11

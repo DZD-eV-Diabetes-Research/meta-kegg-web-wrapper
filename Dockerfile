@@ -30,8 +30,9 @@ RUN python3 -m pip install --upgrade pip
 RUN pip install -U pip-tools
 
 # Install requirements
+# --no-deps: requirements.txt is a complete lock that overrides metaKEGG's outdated exact pins (see backend/requirements.overrides.txt)
 COPY backend/requirements.txt $BASEDIR/requirements.txt
-RUN pip install -U -r $BASEDIR/requirements.txt
+RUN pip install --no-deps -r $BASEDIR/requirements.txt
 
 # install app
 COPY backend/mekeweserver $BASEDIR/mekeweserver

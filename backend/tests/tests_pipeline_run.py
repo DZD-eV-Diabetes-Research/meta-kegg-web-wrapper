@@ -130,9 +130,10 @@ def test_single_input_gene_pipeline_run():
         required_keys_and_val={"state": "initialized"},
         exception_dict_identifier="GET-'/api/pipeline/{pipeline_ticket_id}/status'-response",
     )
-    res = req(
-        f"/api/pipeline/{pipeline_ticket_id}/run/single_input_genes", method="post"
+    req(
+        f"/api/pipeline/{pipeline_ticket_id}/set/gene_expression", method="patch"
     )
+    res = req(f"/api/pipeline/{pipeline_ticket_id}/run", method="post")
     dict_must_contain(
         res,
         required_keys_and_val={"state": "queued"},
@@ -244,10 +245,11 @@ def test_single_input_transcripts_run():
         required_keys_and_val={"state": "initialized"},
         exception_dict_identifier="GET-'/api/pipeline/{pipeline_ticket_id}/status'-response",
     )
-    res = req(
-        f"/api/pipeline/{pipeline_ticket_id}/run/single_input_transcripts",
-        method="post",
+    req(
+        f"/api/pipeline/{pipeline_ticket_id}/set/transcript_expression",
+        method="patch",
     )
+    res = req(f"/api/pipeline/{pipeline_ticket_id}/run", method="post")
     dict_must_contain(
         res,
         required_keys_and_val={"state": "queued"},
